@@ -1,0 +1,27 @@
+# Core libraries used by the GUI (concept_gui.py) and corpus builder
+pymupdf
+beautifulsoup4
+requests
+chardet
+pillow
+numpy
+tqdm
+ebooklib
+markdown
+tkinterdnd2
+pdflatex
+
+# Optional: language detection and image text-likeness improvements
+langid
+opencv-python-headless
+
+# Optional (ASR for audio/video in corpus_builder.py)
+openai-whisper
+torch
+
+# Notes (external binaries, install via system package manager):
+# - pandoc (for high‑quality Markdown→PDF)
+# - wkhtmltopdf (engine for HTML→PDF; enables local file access)
+# - tesseract (OCR CLI)
+# - ffmpeg/ffprobe (media handling)
+# - ocrmypdf (for scanned PDFs)
