@@ -1,0 +1,6 @@
+concepts
+.venv
+.idea-hole
+__pycache__
+.zipignore
+.gitignore.DS_Store
