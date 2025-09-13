@@ -2092,6 +2092,8 @@ class App(TkinterDnD.Tk):  # type: ignore
                         self.ollama_model.set(obj['ollama_model'])
                     if obj.get('git_remote_url'):
                         self.git_remote_url.set(obj['git_remote_url'])
+                    if obj.get('searx_url'):
+                        self.searx_url.set(obj['searx_url'])
                     if obj.get('pandoc_path'):
                         # Only set if attribute exists
                         try: self.pandoc_path.set(obj['pandoc_path'])
@@ -2261,6 +2263,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                 'ollama_host': self.ollama_host.get(),
                 'ollama_model': self.ollama_model.get(),
                 'git_remote_url': self.git_remote_url.get(),
+                'searx_url': self.searx_url.get(),
                 'pandoc_path': getattr(self, 'pandoc_path', tk.StringVar(value='')).get() if hasattr(self, 'pandoc_path') else '',
                 'wkhtmltopdf_path': getattr(self, 'wkhtmltopdf_path', tk.StringVar(value='')).get() if hasattr(self, 'wkhtmltopdf_path') else '',
             }
