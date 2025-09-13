@@ -2220,6 +2220,146 @@ class App(TkinterDnD.Tk):  # type: ignore
             self._ui(lambda m=f"Failed to save session:\n{e}": messagebox.showerror("Error", m))
             return False
 
+    # --- Prior-art search (SearXNG + embeddings)
+    def on_prior_art(self):
+        model = (self.ollama_model.get() or "").strip()
+        if not model or model == "Select model...":
+            self._ui(lambda: messagebox.showinfo("Select model", "Please select a model first."))
+            return
+        if not self.files and not self.notes.get("1.0", tk.END).strip():
+            self._ui(lambda: messagebox.showinfo("Nothing to search", "Add files or write some notes first."))
+            return
+        threading.Thread(target=self._prior_art_thread, daemon=True).start()
+
+    def _prior_art_thread(self):
+        try:
+            self._set_status("Preparing knowledge base…")
+            records = self.ensure_and_load_kb_for_current()
+            notes = self.notes.get("1.0", tk.END).strip()
+            kb_str = build_kb_string(records)
+            assets = [p for p in self.files if self.include_map.get(str(p), True)]
+            searx_url = (self.searx_url.get() or "").strip() or None
+
+            def _status_cb(s: str):
+                self._set_status(s)
+
+            res = websearch.prior_art_search(
+                ollama_host=self.ollama_host.get(),
+                model=self.ollama_model.get(),
+                notes=notes,
+                kb=kb_str,
+                assets=[str(p) for p in assets],
+                searx_url=searx_url,
+                status_cb=_status_cb,
+            )
+            self._set_status("Prior-art search complete")
+            self._ui(lambda r=res: self._show_prior_art_results(r))
+        except Exception as e:
+            self._set_status("Prior-art search failed")
+            msg = f"Prior-art search failed:\n{e}"
+            self._ui(lambda m=msg: messagebox.showerror("Error", m))
+
+    def _show_prior_art_results(self, result: Dict[str, Any]):
+        try:
+            win = tk.Toplevel(self)
+            win.title("Prior Art Results")
+            try:
+                win.geometry("980x640")
+            except Exception:
+                pass
+
+            top = ttk.Frame(win)
+            top.pack(side=tk.TOP, fill=tk.X, padx=8, pady=8)
+            ttk.Label(top, text="Queries:").pack(side=tk.LEFT)
+            q_str = ";  ".join(result.get("queries", [])[:3])
+            q_entry = ttk.Entry(top)
+            q_entry.insert(0, q_str)
+            q_entry.configure(state="readonly")
+            q_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6,0))
+
+            body = ttk.Panedwindow(win, orient=tk.VERTICAL)
+            body.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0,8))
+
+            upper = ttk.Frame(body)
+            lower = ttk.Frame(body)
+            body.add(upper, weight=3)
+            body.add(lower, weight=2)
+
+            cols = ("score", "url")
+            tv = ttk.Treeview(upper, columns=cols, show="headings")
+            tv.heading("score", text="Score")
+            tv.heading("url", text="URL")
+            tv.column("score", width=60, anchor=tk.W)
+            tv.column("url", width=860, anchor=tk.W)
+            vs = ttk.Scrollbar(upper, orient=tk.VERTICAL, command=tv.yview)
+            tv.configure(yscrollcommand=vs.set)
+            tv.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            vs.pack(side=tk.RIGHT, fill=tk.Y)
+
+            # Snippet area
+            snip = tk.Text(lower, wrap=tk.WORD)
+            snip.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            snip_sb = ttk.Scrollbar(lower, orient=tk.VERTICAL, command=snip.yview)
+            snip.configure(yscrollcommand=snip_sb.set)
+            snip_sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+            rows = result.get("results", []) or []
+            for i, item in enumerate(rows):
+                score = item.get("score", 0)
+                url = item.get("url", "")
+                tv.insert('', tk.END, iid=str(i), values=(f"{score:.1f}", url))
+
+            def _on_sel(_e=None):
+                sel = tv.selection()
+                if not sel:
+                    return
+                try:
+                    i = int(sel[0])
+                except Exception:
+                    return
+                try:
+                    data = rows[i]
+                except Exception:
+                    data = {}
+                snippet = (data.get("snippet", "") or "").strip()
+                snip.configure(state="normal")
+                snip.delete("1.0", tk.END)
+                if snippet:
+                    snip.insert("1.0", snippet)
+                snip.configure(state="disabled")
+
+            tv.bind('<<TreeviewSelect>>', _on_sel)
+
+            def _open_selected(_e=None):
+                sel = tv.selection()
+                if not sel:
+                    return
+                try:
+                    i = int(sel[0])
+                    url = rows[i].get("url")
+                    if url:
+                        webbrowser.open(url)
+                except Exception:
+                    pass
+
+            tv.bind('<Double-1>', _open_selected)
+
+            # Initial selection
+            try:
+                first = tv.get_children('')[:1]
+                if first:
+                    tv.selection_set(first)
+                    _on_sel()
+            except Exception:
+                pass
+        except Exception:
+            # fallback: messagebox
+            try:
+                urls = [x.get("url", "") for x in (result.get("results", []) or [])][:10]
+                messagebox.showinfo("Results", "\n".join(urls) or "No results")
+            except Exception:
+                pass
+
     def _maybe_save_if_dirty(self) -> bool:
         try:
             # Only prompt if content truly differs from last saved snapshot
