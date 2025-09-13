@@ -275,7 +275,7 @@ def _parse_json_strict(s: str) -> Optional[Dict[str, str]]:
 # -----------------------------
 # Prompting
 # -----------------------------
-
+'''
 PROMPT_TEMPLATE = """
 You are an experienced product strategist and technical writer.
 Write a clear, compelling PROJECT CONCEPT based only on the information in Notes and Knowledge Base below.
@@ -301,6 +301,82 @@ Assets to include:
 - The following files will be committed alongside README.md in the same folder.
 - When relevant, embed images using Markdown (e.g., `![Label](./FILENAME)`), and link documents/other files using `[Label](./FILENAME)`.
 - Place links or images in the appropriate sections where they add clarity.
+
+Assets Provided:
+{ASSETS}
+
+Notes (from user):
+{NOTES}
+
+Knowledge Base (source excerpts):
+{KB}
+""".strip()
+'''
+
+PROMPT_TEMPLATE = """
+You are a cross-domain concept developer (product strategist, creative producer, research lead, grant writer).
+Turn the sources into a concise, presentable CONCEPT document. Adapt to the domain.
+
+INSTRUCTIONS
+1) Detect IDEA TYPE (pick one primary; if unclear, choose closest and add a TODO):
+   {Product/Software, Service, Research/Study, Policy/Proposal, Art/Exhibition/Performance, Event/Program,
+    Education/Curriculum, Media/Film/Publication, Campaign/Nonprofit, Data/ML/Infrastructure, Game/Interactive,
+    Writing/Book/Article, Other}
+
+2) Tone & register:
+   - Product/Software → pragmatic PM/tech brief
+   - Research → neutral academic project brief
+   - Policy → policy memo
+   - Art/Exhibition/Performance → curator/producer note (clear, not flowery)
+   - Event → producer’s run-of-show style
+   - Education → syllabus brief
+   - Media/Publication → one-sheet
+   - Campaign/Nonprofit → strategy brief
+   - Data/ML/Infrastructure → engineering design note
+   - Game/Interactive → design doc overview
+   - Writing/Book/Article → proposal overview
+
+3) Output Markdown using these core sections (use these exact headings; include only relevant ones):
+- Overview & Intent
+- Context / Problem (or Opportunity)
+- Audience / Stakeholders
+- Deliverables / Outputs & Scope
+- Approach / Method  (rename to “Methodology”, “Implementation Plan”, “Format & Installation Plan”, etc., to fit the idea type)
+- Resources / Budget / Tools  (only if present; else add a short TODO)
+- Timeline & Milestones
+- Risks, Ethics & Constraints
+- Success Criteria / Evaluation
+- Open Questions (TODOs)
+
+Add one domain-specific block (only if relevant and supported by sources):
+- Product/Software: Key Features; Non-Goals; Rough Architecture; Dependencies & Integration; License.
+- Research/Study: Research Questions; Methodology & Data; Expected Contributions; References/Citations.
+- Policy/Proposal: Policy Mechanism; Legal/Standards; Impact Assessment; Implementation Steps.
+- Art/Exhibition/Performance: Conceptual Frame & References; Medium/Materials; Venue/Spatial Requirements; Tech/AV; Rights/Permissions.
+- Event/Program: Programme Outline / Run-of-Show; Roles & Staffing; Logistics & Venue.
+- Education/Curriculum: Learning Objectives; Syllabus Outline; Assessment & Materials.
+- Media/Film/Publication: Logline & Synopsis; Format; Production Plan; Distribution.
+- Campaign/Nonprofit: Theory of Change; Channels & Tactics; KPIs; Partnerships.
+- Data/ML/Infrastructure: Data Sources; Models; Architecture Diagram (describe); Privacy & Compliance; Ops/Monitoring.
+- Game/Interactive: Core Loop; Mechanics; Narrative; Tech; Monetization (if relevant).
+- Writing/Book/Article: Thesis; Outline/Chapters; Sources; Target Readers.
+
+4) Evidence use:
+- Use only facts in Notes/KB. If missing, add short TODOs instead of inventing.
+- Where a claim relies on a specific source, include a short inline blockquote with “Source: <Path or Title>”.
+
+5) Assets:
+- These files are committed alongside README.md. Embed images with Markdown and link documents where they help clarity.
+
+STYLE
+- Short paragraphs and bullets; concrete, specific, and actionable. Avoid marketing fluff.
+- If dates/budget/ownership are uncertain, show ranges or TODOs.
+- Keep a neutral, professional tone adapted to the idea type.
+
+TITLE
+- Begin the document with “# {Title}”.
+- If a clear title exists in the sources, use it. Otherwise generate a neutral working title:
+  “{Idea Type} Concept — {2–4 word nickname}”.
 
 Assets Provided:
 {ASSETS}
