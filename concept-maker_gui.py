@@ -59,6 +59,8 @@ import html
 # --- HTTP (stdlib)
 import urllib.request
 import urllib.error
+import webbrowser
+import websearch
 
 
 # -----------------------------
@@ -485,6 +487,12 @@ class App(TkinterDnD.Tk):  # type: ignore
         # Default model prompt suggests explicit selection
         self.ollama_model = tk.StringVar(value=os.environ.get("IDEA_HOLE_MODEL", "Select model..."))
         self.git_remote_url = tk.StringVar(value=os.environ.get("IDEA_HOLE_REMOTE", ""))
+        # SearXNG URL (for prior-art search)
+        try:
+            _searx_default = websearch.SEARX_DEFAULT_URL
+        except Exception:
+            _searx_default = "http://localhost:8888"
+        self.searx_url = tk.StringVar(value=os.environ.get("SEARX_URL", _searx_default))
 
         # Concept metadata
         self.title_var = tk.StringVar(value="")
@@ -648,6 +656,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         notes_actions = ttk.Frame(notes_frame)
         notes_actions.pack(side=tk.TOP, fill=tk.X, padx=(8,0), pady=(6,6))
         ttk.Button(notes_actions, text="Generate Concept", command=self.on_generate).pack(side=tk.LEFT)
+        ttk.Button(notes_actions, text="Find Prior Art", command=self.on_prior_art).pack(side=tk.LEFT, padx=(6,0))
 
         # Concept editor + metadata
         concept_frame = ttk.LabelFrame(right, text="Concept (editable)")
@@ -715,6 +724,8 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.model_combo.pack(side=tk.LEFT, padx=(4,10))
         ttk.Label(bottom, text="Remote git repository:").pack(side=tk.LEFT)
         ttk.Entry(bottom, textvariable=self.git_remote_url, width=40).pack(side=tk.LEFT, padx=(4,10))
+        ttk.Label(bottom, text="SearXNG URL:").pack(side=tk.LEFT)
+        ttk.Entry(bottom, textvariable=self.searx_url, width=26).pack(side=tk.LEFT, padx=(4,0))
 
         # Enable/disable push button based on fields
         self.title_var.trace_add('write', lambda *a: (self.update_push_state(), self._set_dirty(True)))
@@ -728,6 +739,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.ollama_host.trace_add('write', lambda *a: self._save_settings())
         self.ollama_model.trace_add('write', lambda *a: self._save_settings())
         self.git_remote_url.trace_add('write', lambda *a: self._save_settings())
+        self.searx_url.trace_add('write', lambda *a: self._save_settings())
         # Optional tool overrides would be persisted if we expose them later
         self.update_push_state()
         # Ensure placeholder if saved model not present
