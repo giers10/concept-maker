@@ -1,6 +1,6 @@
 # Concept Maker GUI
 
-A desktop tool to turn raw ideas, notes, and files into a clear, actionable project concept. Drag in files, jot notes, build a compact knowledge base, and generate an editable Markdown concept using a local Ollama model.
+A desktop tool to turn raw ideas, notes, and files into a clear, actionable project concept. Drag in files, jot notes, use automated websearch to find prior art, build a compact knowledge base, generate an editable Markdown concept using a local LLM, convert it to pdf and push your concept to a Git repo.
 
 ## Features
 - Drag and drop files/folders into a table (falls back to add buttons).
