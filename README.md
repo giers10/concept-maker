@@ -7,6 +7,7 @@ A desktop tool to turn raw ideas, notes, and files into a clear, actionable proj
 - Freeform notes area for thoughts and fragments.
 - Builds a JSONL knowledge base from your files (uses `corpus_builder.py` when present; includes a simple fallback).
 - Generates a polished Concept (Markdown) via a local Ollama model.
+- Prior-art search via SearXNG: generates smart queries, fetches pages, embeds + reranks, and shows a results window.
 - Edit the result in‑app, then save it into a local Git repo and optionally push to a remote.
 - Remembers sessions; re‑open and continue later.
 - Uses `icon.png` for the window/taskbar/dock icon.
@@ -24,6 +25,10 @@ Optional Python packages improve file ingestion:
 - `tkinterdnd2` (native drag & drop)
 - `pymupdf` (PDF text extraction)
 - `beautifulsoup4` (better HTML text extraction)
+
+Prior‑art search requires API access to a SearXNG instance:
+- Recommended: run SearXNG locally via Docker (installation/compose details are out of scope for this repo).
+- Project site: https://searxng.org
 
 Note: `requirements.txt` also lists some optional extras and system tools. If installation fails on entries that are not Python packages (e.g., system binaries), install them via your OS package manager or comment those lines out.
 
@@ -49,11 +54,20 @@ Ensure Ollama is running before generating concepts:
 - Click to generate the Concept; edit as needed.
 - Save: the app can save to a local repo and push to a remote.
 
+### Prior‑Art Search (SearXNG)
+- In the Notes section, click "Find Prior Art".
+- Configure the SearXNG endpoint in the bottom bar (default `http://localhost:8888`).
+- The app will:
+  - Use the selected Ollama model to generate exactly three search queries (based on your Notes, Knowledge Base, and asset filenames).
+  - Query SearXNG, fetch promising pages, embed them with Ollama embeddings (`bge-m3:latest` by default), and rerank by relevance.
+  - Open a results window showing URLs, scores, and content snippets; double‑click a row to open in your browser.
+
 ## Configuration
 Environment variables (optional):
 - `OLLAMA_HOST`: override Ollama URL (default `http://localhost:11434`).
 - `IDEA_HOLE_MODEL`: default model name shown in the UI.
 - `IDEA_HOLE_REMOTE`: default Git remote URL.
+- `SEARX_URL`: default SearXNG base URL for prior‑art search (default `http://localhost:8888`).
 
 ## Data & Storage
 - Working data lives under `./.idea-hole/`:
@@ -69,6 +83,7 @@ Environment variables (optional):
 ## Troubleshooting
 - Tk import errors on Linux: install `python3-tk` via your package manager.
 - Ollama connection errors: ensure `ollama serve` is running and the model is pulled.
+- Prior‑art search returns nothing: ensure your SearXNG instance is reachable at the configured URL and supports `/search?format=json`.
 - Pip fails on non-Python entries in `requirements.txt`: install those tools via your OS, or comment out the offending lines and rerun the install.
 
 ## Development
@@ -76,3 +91,4 @@ Environment variables (optional):
 - Launcher script: `run.sh`
 - Optional corpus builder: `corpus_builder.py` (if present) is invoked for richer ingestion; otherwise, a simple built‑in fallback is used.
 
+Prior‑art module: `websearch.py`
