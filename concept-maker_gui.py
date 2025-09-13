@@ -374,9 +374,8 @@ STYLE
 - Keep a neutral, professional tone adapted to the idea type.
 
 TITLE
+- Generate a neutral 2-4 words working title.
 - Begin the document with “# {Title}”.
-- If a clear title exists in the sources, use it. Otherwise generate a neutral working title:
-  “{Idea Type} Concept — {2–4 word nickname}”.
 
 Assets Provided:
 {ASSETS}
