@@ -1089,7 +1089,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             if p.is_dir():
                 for q in p.rglob('*'):
                     if q.is_file():
-                    final.append(q)
+                        final.append(q)
             elif p.exists():
                 final.append(p)
         return final
