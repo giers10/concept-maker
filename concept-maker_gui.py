@@ -695,6 +695,8 @@ class App(TkinterDnD.Tk):  # type: ignore
         self._suppress_rephrase_select: bool = False
         self._rephrase_visible: bool = False
         self._image_prompt_value: str = IMAGE_PROMPT_PLACEHOLDER
+        self._sdxl_pipe = None
+        self._sdxl_device = None
 
         # Defaults
         self.ollama_host = tk.StringVar(value=os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
