@@ -1288,10 +1288,6 @@ class App(TkinterDnD.Tk):  # type: ignore
         except Exception:
             return
         if not self.rephrase_variants:
-            try:
-                self.rephrase_tree.insert('', tk.END, iid="placeholder", values=("No variants yet", "Click Rephrase to generate"))
-            except Exception:
-                pass
             return
         for v in self.rephrase_variants:
             key = v.get("key") or ""
