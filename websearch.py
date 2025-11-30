@@ -136,12 +136,54 @@ def _is_probably_html_url(url: str) -> bool:
         if "." not in path:
             return True
         ext = path.rsplit(".", 1)[-1]
-        return ext not in {
-            "pdf","jpg","jpeg","png","gif","webp","svg","mp4","mp3","mov","avi",
-            "zip","gz","7z","tar","rar","woff","woff2","ttf","otf"
-        }
+            return ext not in {
+                "pdf","jpg","jpeg","png","gif","webp","svg","mp4","mp3","mov","avi",
+                "zip","gz","7z","tar","rar","woff","woff2","ttf","otf"
+            }
     except Exception:
         return True
+
+
+# Keywords that typically belong to navigation, banners, or cookie dialogs
+_NOISE_WORDS = {
+    "home","contact","about","copyright","privacy","policy","cookies","cookie","consent",
+    "login","log","sign","signup","signin","register","account","subscribe","newsletter",
+    "advert","advertisement","ads","promo","banner","menu","navigation","nav","footer",
+    "header","share","social","terms","conditions","accessibility","language","shop",
+    "search","skip","main","content"
+}
+_NOISE_ATTR_RE = re.compile(r"(cookie|consent|gdpr|banner|popup|modal|dialog|newsletter|subscribe|advert|promo|signin|signup|login|toolbar|share|social|nav|menu|footer|header)", re.I)
+
+
+def _clean_lines(text: str) -> str:
+    lines = [ln.strip() for ln in text.splitlines()]
+    out = []
+    seen: set[str] = set()
+    for ln in lines:
+        if not ln:
+            if out and out[-1]:
+                out.append("")
+            continue
+        lower = ln.lower()
+        # Drop obvious boilerplate / cookie notices / menu crumbs
+        if len(ln) <= 140:
+            if any(k in lower for k in ("cookie", "consent", "newsletter", "advert", "privacy policy", "terms", "skip to main", "enable javascript", "accept all", "manage preferences")):
+                continue
+            tokens = re.findall(r"[a-zA-Z]+", lower)
+            if tokens and all(t in _NOISE_WORDS for t in tokens) and len(tokens) <= 8:
+                continue
+        if lower in seen:
+            continue
+        seen.add(lower)
+        out.append(ln)
+
+    # Collapse multiple blank lines
+    compact: list[str] = []
+    for ln in out:
+        if ln == "" and (not compact or compact[-1] == ""):
+            continue
+        compact.append(ln)
+    return "\n".join(compact)
 
 
 def _extract_text(html: str, *, max_len: int = 120_000) -> str:
@@ -152,18 +194,73 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
         txt = re.sub(r"<\s*(script|style)[^>]*>.*?<\s*/\s*\1\s*>", " ", html, flags=re.S|re.I)
         txt = re.sub(r"<[^>]+>", " ", txt)
         txt = re.sub(r"\s+", " ", txt)
-        return txt.strip()[:max_len]
+        return _clean_lines(txt.strip())[:max_len]
     try:
         try:
             soup = BeautifulSoup(html, "lxml")
         except Exception:
             soup = BeautifulSoup(html, "html.parser")
-        for tag in soup.select("script,style,noscript"):
+
+        # Strip obvious boilerplate containers first
+        for tag in soup.select("script,style,noscript,template"):
             tag.decompose()
-        text = soup.get_text("\n", strip=True)
-        text = re.sub(r"[ \t]+", " ", text)
-        text = re.sub(r"\n{3,}", "\n\n", text)
-        return text[:max_len] if len(text) > max_len else text
+
+        for tag_name in ("header", "footer", "nav", "aside", "form", "iframe", "svg", "canvas", "input", "select", "option", "button"):
+            for t in soup.find_all(tag_name):
+                t.decompose()
+
+        # Remove elements whose id/class/role clearly mark them as noise
+        for el in list(soup.find_all(True)):
+            attrs = " ".join([
+                el.get("id") or "",
+                " ".join(el.get("class") or []),
+                el.get("role") or "",
+            ])
+            if _NOISE_ATTR_RE.search(attrs or ""):
+                try:
+                    el.decompose()
+                except Exception:
+                    pass
+
+        def _norm(node):
+            txt = node.get_text("\n", strip=True)
+            txt = re.sub(r"[ \t]+", " ", txt)
+            txt = re.sub(r"\n{3,}", "\n\n", txt)
+            return txt
+
+        # Score candidate blocks to pick main content
+        best_text = ""
+        best_score = 0.0
+        for node in soup.find_all(["article", "main", "section", "div", "body"]):
+            raw = _norm(node)
+            if not raw or len(raw) < 80:
+                continue
+            link_count = len(node.find_all("a"))
+            link_density = link_count / max(1.0, len(raw) / 80.0)
+            penalty = min(0.9, link_density)
+            bonus = 1.0
+            if node.name == "article":
+                bonus += 0.35
+            elif node.name == "main":
+                bonus += 0.25
+            elif node.name == "section":
+                bonus += 0.1
+            score = len(raw) * bonus * (1.0 - penalty)
+            if score > best_score:
+                best_score = score
+                best_text = raw
+
+        if not best_text:
+            # fallback to whole body/text
+            target = soup.body or soup
+            best_text = _norm(target)
+
+        cleaned = _clean_lines(best_text)
+        if not cleaned.strip():
+            return ""
+        if len(cleaned) > max_len:
+            return cleaned[:max_len]
+        return cleaned
     except Exception:
         return ""
 
@@ -425,4 +522,3 @@ def prior_art_search(
         out.append({"url": u, "title": "", "score": round(sc, 1), "snippet": snippet})
 
     return {"queries": queries, "lang": lang, "results": out}
-
