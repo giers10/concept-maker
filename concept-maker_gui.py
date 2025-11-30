@@ -738,7 +738,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         # No auto-hide for reliability
         # Rephrase/variant list sits between the notes box and action buttons
         self.rephrase_frame = ttk.Frame(notes_frame)
-        self.rephrase_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=False, padx=(8,0), pady=(6,0))
+        self._rephrase_pack_kwargs = {"side": tk.TOP, "fill": tk.BOTH, "expand": False, "padx": (8,0), "pady": (6,0)}
         ttk.Label(self.rephrase_frame, text="Rephrase variants:").pack(anchor=tk.W)
         rephrase_list_container = ttk.Frame(self.rephrase_frame)
         rephrase_list_container.pack(fill=tk.BOTH, expand=True)
