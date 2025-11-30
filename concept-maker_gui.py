@@ -40,7 +40,7 @@ from typing import List, Dict, Optional, Set, Any
 
 # --- GUI imports
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 from tkinter.scrolledtext import ScrolledText
 
 # Optional native drag/drop support
@@ -60,6 +60,7 @@ import html
 # --- HTTP (stdlib)
 import urllib.request
 import urllib.error
+from urllib.parse import urlparse
 import webbrowser
 import websearch
 
