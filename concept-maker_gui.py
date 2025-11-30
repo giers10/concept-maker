@@ -583,11 +583,14 @@ ASSISTANT:
 
 
 def generate_image_prompt_for_idea(idea_text: str, *, client: OllamaClient, model: str) -> str:
-    details = classify_idea(idea_text)
+    cleaned = (idea_text or "").strip()
+    if not cleaned:
+        raise ValueError("Idea text is empty")
+    details = classify_idea(cleaned)
     category: IdeaCategory = details.get("category", IdeaCategory.APP_OR_TOOL)
     visualization_hint = details.get("visualization_hint", VISUALIZATION_HINTS.get(category, ""))
     system_message = build_image_prompt_system_message(category, visualization_hint)
-    prompt = f"{system_message}\n\nUSER IDEA:\n{idea_text.strip()}\n\nASSISTANT:"
+    prompt = f"{system_message}\n\nUSER IDEA:\n{cleaned}\n\nASSISTANT:"
     raw = client.generate(model=model, prompt=prompt)
     return sanitize_llm_text_simple(raw)
 
