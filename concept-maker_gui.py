@@ -987,7 +987,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         except Exception:
             self.image_prompt_vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self.image_prompt_text.configure(yscrollcommand=self.image_prompt_vsb.set)
-        self._set_image_prompt_text("Generated image prompt will appear here.")
+        self._set_image_prompt_text(IMAGE_PROMPT_PLACEHOLDER)
 
         # Bottom bar
         bottom = ttk.Frame(root)
