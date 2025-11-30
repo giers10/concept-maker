@@ -279,10 +279,17 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
 
         cleaned = _clean_lines(best_text)
         # If too short, fall back to broader body text instead of dropping the page
-        if len(cleaned) < 300:
+        if len(cleaned) < 200:
             broader = _clean_lines(_norm(soup.body or soup))
             if len(broader) > len(cleaned):
                 cleaned = broader
+
+        # Absolute fallback to regex-based stripping if soup path failed
+        if len(cleaned.strip()) < 120:
+            txt = re.sub(r"<\s*(script|style)[^>]*>.*?<\s*/\s*\1\s*>", " ", html, flags=re.S|re.I)
+            txt = re.sub(r"<[^>]+>", " ", txt)
+            txt = re.sub(r"\s+", " ", txt)
+            cleaned = txt.strip()
 
         if not cleaned.strip():
             return ""
