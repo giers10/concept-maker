@@ -2029,6 +2029,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             self._apply_rephrase_results(cleaned_rephrases, select_key=s.get("rephrase_selected_key"), mark_dirty=False)
 
             files = s.get("files") or []
+            websites = s.get("websites") or []
             # Re-add files; prefer original path, fallback to symlink by hash
             resolved: List[Path] = []
             for f in files:
@@ -2051,6 +2052,15 @@ class App(TkinterDnD.Tk):  # type: ignore
                 inc = bool(f.get("include", True))
                 if p:
                     self.include_map[p] = inc
+            # Re-add websites
+            urls_to_add: List[str] = []
+            for w in websites:
+                u = str(w.get("url") or "")
+                if u:
+                    urls_to_add.append(u)
+                    self.include_map[u] = bool(w.get("include", True))
+            if urls_to_add:
+                self._add_urls(urls_to_add)
             # Reflect include flags in UI rows
             for item in self.tree.get_children(''):
                 vals = list(self.tree.item(item, 'values'))
