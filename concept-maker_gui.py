@@ -1799,10 +1799,22 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.image_prompt_text.configure(state=tk.NORMAL)
             self.image_prompt_text.delete("1.0", tk.END)
             if text:
-                self.image_prompt_text.insert("1.0", text.strip())
+                text_clean = text.strip()
+                self.image_prompt_text.insert("1.0", text_clean)
+                self._image_prompt_value = text_clean
+            else:
+                self._image_prompt_value = ""
             self.image_prompt_text.configure(state=tk.DISABLED)
         except Exception:
             pass
+
+    def _get_image_prompt_text(self) -> str:
+        if getattr(self, "_image_prompt_value", None) is not None:
+            return self._image_prompt_value
+        try:
+            return self.image_prompt_text.get("1.0", tk.END).strip()
+        except Exception:
+            return ""
 
     def _set_image_prompt_loading(self, flag: bool, *, interim_text: Optional[str] = None):
         try:
