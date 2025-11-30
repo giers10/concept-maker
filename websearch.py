@@ -208,18 +208,42 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
         for tag in soup.select("script,style,noscript,template"):
             tag.decompose()
 
-        for tag_name in ("header", "footer", "nav", "aside", "form", "iframe", "svg", "canvas", "input", "select", "option", "button"):
+        # Remove cookie/consent overlays by attributes or short text snippets
+        for el in list(soup.find_all(True)):
+            if el.name in {"html", "body"}:
+                continue
+            attr_str = " ".join([
+                el.get("id") or "",
+                " ".join(el.get("class") or []),
+                el.get("role") or "",
+                el.get("aria-label") or "",
+            ]).lower()
+            text_preview = (el.get_text(" ", strip=True)[:220] or "").lower()
+            if _COOKIE_HINT_RE.search(attr_str) or _COOKIE_HINT_RE.search(text_preview):
+                try:
+                    el.decompose()
+                except Exception:
+                    pass
+
+        # Remove clearly decorative/structural regions
+        for tag_name in ("header", "footer", "nav", "aside", "form", "iframe", "svg", "canvas"):
             for t in soup.find_all(tag_name):
-                t.decompose()
+                try:
+                    t.decompose()
+                except Exception:
+                    pass
 
         # Remove elements whose id/class/role clearly mark them as noise
         for el in list(soup.find_all(True)):
+            if el.name in {"html", "body"}:
+                continue
             attrs = " ".join([
                 el.get("id") or "",
                 " ".join(el.get("class") or []),
                 el.get("role") or "",
+                el.get("aria-label") or "",
             ])
-            if _NOISE_ATTR_RE.search(attrs or ""):
+            if _NOISE_ATTR_RE.search(attrs or "") and not _CONTENT_HINT_RE.search(attrs or ""):
                 try:
                     el.decompose()
                 except Exception:
@@ -231,24 +255,40 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
             txt = re.sub(r"\n{3,}", "\n\n", txt)
             return txt
 
+        def _score_node(node, raw_text: str, attr_str: str) -> float:
+            length = len(raw_text)
+            if length < 80:
+                return 0.0
+            link_count = len(node.find_all("a"))
+            link_density = link_count / max(1.0, length / 80.0)
+            bonus = 0.0
+            if node.name == "article":
+                bonus += 0.6 * length
+            elif node.name == "main":
+                bonus += 0.4 * length
+            elif node.name == "section":
+                bonus += 0.2 * length
+            if _CONTENT_HINT_RE.search(attr_str):
+                bonus += 0.35 * length
+            if _NEGATIVE_HINT_RE.search(attr_str):
+                bonus -= 0.25 * length
+            penalty = min(0.9, link_density * 0.6)
+            return (length + bonus) * (1.0 - penalty)
+
         # Score candidate blocks to pick main content
         best_text = ""
         best_score = 0.0
         for node in soup.find_all(["article", "main", "section", "div", "body"]):
             raw = _norm(node)
-            if not raw or len(raw) < 80:
+            if not raw:
                 continue
-            link_count = len(node.find_all("a"))
-            link_density = link_count / max(1.0, len(raw) / 80.0)
-            penalty = min(0.9, link_density)
-            bonus = 1.0
-            if node.name == "article":
-                bonus += 0.35
-            elif node.name == "main":
-                bonus += 0.25
-            elif node.name == "section":
-                bonus += 0.1
-            score = len(raw) * bonus * (1.0 - penalty)
+            attr_str = " ".join([
+                node.get("id") or "",
+                " ".join(node.get("class") or []),
+                node.get("role") or "",
+                node.get("aria-label") or "",
+            ]).lower()
+            score = _score_node(node, raw, attr_str)
             if score > best_score:
                 best_score = score
                 best_text = raw
@@ -259,6 +299,12 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
             best_text = _norm(target)
 
         cleaned = _clean_lines(best_text)
+        # If too short, fall back to broader body text instead of dropping the page
+        if len(cleaned) < 300:
+            broader = _clean_lines(_norm(soup.body or soup))
+            if len(broader) > len(cleaned):
+                cleaned = broader
+
         if not cleaned.strip():
             return ""
         if len(cleaned) > max_len:
