@@ -2765,7 +2765,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "rephrase_selected_key": self.rephrase_selected_key,
             }
         except Exception:
-            return {"title":"","description":"","notes":"","concept":"","files":[],"rephrase_variants":[],"rephrase_selected_key":None}
+            return {"title":"","description":"","notes":"","concept":"","files":[],"websites":[],"rephrase_variants":[],"rephrase_selected_key":None}
 
     def _is_effectively_dirty(self) -> bool:
         try:
