@@ -33,6 +33,7 @@ import shutil
 import threading
 import traceback
 import hashlib
+import contextlib
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
