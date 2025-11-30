@@ -2941,6 +2941,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                     "notes": self.notes.get("1.0", tk.END).strip(),
                     "concept": self.concept.get("1.0", tk.END).strip(),
                     "files": [{"path": str(p), "include": bool(self.include_map.get(str(p), True))} for p in self.files],
+                    "websites": [{"url": str(u), "include": bool(self.include_map.get(str(u), True))} for u in self.websites],
                     "rephrase_variants": [{
                         "key": str(v.get("key") or ""),
                         "label": str(v.get("label") or ""),
