@@ -384,7 +384,7 @@ def searx_search(base_url: str, query: str, *, max_results: int = 6) -> List[Dic
     return out
 
 
-def fetch_pages(urls: List[str], *, max_pages: int = 8, min_text_len: int = 300) -> Dict[str, str]:
+def fetch_pages(urls: List[str], *, max_pages: int = 8, min_text_len: int = 200) -> Dict[str, str]:
     urls = urls[:max_pages]
     out: Dict[str, str] = {}
     for u in urls:
