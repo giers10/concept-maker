@@ -1724,7 +1724,15 @@ class App(TkinterDnD.Tk):  # type: ignore
             notes = self.notes.get("1.0", tk.END).strip()
             kb = build_kb_string(records)
             assets = [p for p in self.files if self.include_map.get(str(p), True)]
-            assets_str = "\n".join(f"- {Path(p).name}" for p in assets) or "(none)"
+            websites_included = [u for u in self.websites if self.include_map.get(u, True)]
+            assets_lines = []
+            if assets:
+                assets_lines.append("Files:")
+                assets_lines.extend(f"- {Path(p).name}" for p in assets)
+            if websites_included:
+                assets_lines.append("URLs:")
+                assets_lines.extend(f"- {u}" for u in websites_included)
+            assets_str = "\n".join(assets_lines) or "(none)"
             prompt = (
                 PROMPT_TEMPLATE
                 .replace("{NOTES}", notes or "(none)")
