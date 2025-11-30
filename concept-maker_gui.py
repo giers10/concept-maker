@@ -2981,6 +2981,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                         "text": str(v.get("text") or ""),
                     } for v in (self.rephrase_variants or []) if isinstance(v, dict)],
                     "rephrase_selected_key": self.rephrase_selected_key,
+                    "image_prompt": (self._get_image_prompt_text() or "").strip(),
                 }
             return True
         except Exception as e:
