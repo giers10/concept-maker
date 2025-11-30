@@ -1953,9 +1953,10 @@ class App(TkinterDnD.Tk):  # type: ignore
             output_dir.mkdir(parents=True, exist_ok=True)
             ctx = (
                 torch.autocast(device_type=device, dtype=torch.float16)
-                if device in {"cuda", "mps"}
+                if device == "cuda"
                 else contextlib.nullcontext()
             )
+            generator = torch.Generator(device=device) if device != "cpu" else None
             with torch.inference_mode():
                 with ctx:
                     res = pipe(
@@ -1963,6 +1964,9 @@ class App(TkinterDnD.Tk):  # type: ignore
                         guidance_scale=2.0,
                         num_inference_steps=8,
                         num_images_per_prompt=1,
+                        height=1024,
+                        width=1024,
+                        generator=generator,
                     )
             img = res.images[0]
             slug = self._slug(self.title_var.get().strip() or "image")
