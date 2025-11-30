@@ -34,6 +34,7 @@ import threading
 import traceback
 import hashlib
 import contextlib
+import numpy as np
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -1946,7 +1947,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             img = res.images[0]
             slug = self._slug(self.title_var.get().strip() or "image")
             ts = int(time.time())
-            fname = f"{slug}-sdxl.png" if slug else f"image-{ts}.png"
+            fname = f"{slug}-sdxl-{ts}.png" if slug else f"image-{ts}.png"
             out_path = output_dir / fname
             try:
                 img.save(out_path)
