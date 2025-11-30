@@ -733,6 +733,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "notes": "",
                 "concept": "",
                 "files": [],
+                "websites": [],
                 "rephrase_variants": [],
                 "rephrase_selected_key": None,
             }
