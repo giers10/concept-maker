@@ -1962,7 +1962,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                     res = pipe(
                         prompt=prompt,
                         guidance_scale=2.0,
-                        num_inference_steps=8,
+                        num_inference_steps=6,
                         num_images_per_prompt=1,
                         height=1024,
                         width=1024,
