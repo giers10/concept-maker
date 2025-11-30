@@ -796,7 +796,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         paned.add(right, weight=1)
 
         # Files table (with controls inside the same frame)
-        files_frame = ttk.LabelFrame(left, text="Files (drag & drop or use buttons)")
+        files_frame = ttk.LabelFrame(left, text="Files & Websites (drag & drop files; add URLs)")
         files_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=False, pady=(0,8))
 
         # Inner container for tree + scrollbar to allow controls below
@@ -838,6 +838,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         file_controls.pack(side=tk.TOP, fill=tk.X, padx=(8,0), pady=(4,8))
         ttk.Button(file_controls, text="Add Files", command=self.on_add_files).pack(side=tk.LEFT)
         ttk.Button(file_controls, text="Add Folder", command=self.on_add_folder).pack(side=tk.LEFT, padx=(6,0))
+        ttk.Button(file_controls, text="Add Website", command=self.on_add_website).pack(side=tk.LEFT, padx=(6,0))
         ttk.Button(file_controls, text="Remove Selected", command=self.on_remove_selected).pack(side=tk.LEFT, padx=(6,0))
         ttk.Button(file_controls, text="Clear All", command=self.on_clear_all).pack(side=tk.LEFT, padx=(6,0))
 
