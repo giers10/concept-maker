@@ -1829,7 +1829,7 @@ class App(TkinterDnD.Tk):  # type: ignore
 
     def _reset_image_prompt_area(self):
         self._set_image_prompt_loading(False)
-        self._set_image_prompt_text("Generated image prompt will appear here.")
+        self._set_image_prompt_text(IMAGE_PROMPT_PLACEHOLDER)
 
     def on_generate_image_prompt(self):
         model = (self.ollama_model.get() or "").strip()
@@ -1865,6 +1865,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.image_prompt_text.see("1.0")
         except Exception:
             pass
+        self._set_dirty(True)
 
     # --- Rebuild KB only
     def on_rebuild_kb(self):
