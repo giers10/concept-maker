@@ -2044,6 +2044,9 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.concept.delete("1.0", tk.END)
             self.concept.insert("1.0", s.get("concept", ""))
             self._reset_image_prompt_area()
+            saved_image_prompt = (s.get("image_prompt") or "").strip()
+            if saved_image_prompt:
+                self._set_image_prompt_text(saved_image_prompt)
             rephrases_raw = s.get("rephrase_variants") or []
             cleaned_rephrases: List[Dict[str, str]] = []
             for v in rephrases_raw:
