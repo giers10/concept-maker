@@ -1905,9 +1905,15 @@ class App(TkinterDnD.Tk):  # type: ignore
         model_path = Path("/Volumes/SD/ML-Models/stable-diffusion-webui/models/Stable-diffusion/SDXLModels/dreamshaperXL_v21TurboDPMSDE.safetensors")
         if not model_path.exists():
             raise RuntimeError(f"Model file not found: {model_path}")
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        dtype = torch.float16 if device == "cuda" else torch.float32
-        pipe = StableDiffusionXLPipeline.from_single_file(str(model_path), torch_dtype=dtype)
+        has_mps = bool(getattr(torch.backends, "mps", None) and torch.backends.mps.is_available())
+        device = "cuda" if torch.cuda.is_available() else "mps" if has_mps else "cpu"
+        dtype = torch.float16 if device in {"cuda", "mps"} else torch.float32
+        pipe = StableDiffusionXLPipeline.from_single_file(
+            str(model_path),
+            torch_dtype=dtype,
+            safety_checker=None,
+            feature_extractor=None,
+        )
         try:
             pipe.scheduler = DPMSolverSDEScheduler.from_config(pipe.scheduler.config, use_karras_sigmas=True)
         except Exception:
@@ -1916,6 +1922,10 @@ class App(TkinterDnD.Tk):  # type: ignore
         pipe.to(device)
         try:
             pipe.enable_attention_slicing()
+        except Exception:
+            pass
+        try:
+            pipe.set_progress_bar_config(disable=True)
         except Exception:
             pass
         if device == "cuda":
@@ -1935,7 +1945,11 @@ class App(TkinterDnD.Tk):  # type: ignore
             except Exception as e_t:
                 raise RuntimeError(f"torch not available: {e_t}")
             output_dir.mkdir(parents=True, exist_ok=True)
-            ctx = torch.autocast(device_type="cuda", dtype=torch.float16) if device == "cuda" else contextlib.nullcontext()
+            ctx = (
+                torch.autocast(device_type=device, dtype=torch.float16)
+                if device in {"cuda", "mps"}
+                else contextlib.nullcontext()
+            )
             with torch.inference_mode():
                 with ctx:
                     res = pipe(
