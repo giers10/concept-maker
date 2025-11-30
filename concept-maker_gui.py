@@ -1513,7 +1513,9 @@ class App(TkinterDnD.Tk):  # type: ignore
         # Ensure corpus contains all current files, then load those records
         self._set_status("Checking corpus…")
         self._ensure_corpus_for_files(self.files, blocking=True)
+        self._ensure_corpus_for_urls(self.websites, blocking=True)
         hashes = {self.file_hashes.get(str(p)) for p in self.files}
+        hashes.update({self.file_hashes.get(u) for u in self.websites})
         hashes = {h for h in hashes if h}
         recs = self._load_records_for_hashes(hashes)
         self.records = recs
