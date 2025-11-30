@@ -562,6 +562,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.rephrase_variants: List[Dict[str, str]] = []
         self.rephrase_selected_key: Optional[str] = None
         self._suppress_rephrase_select: bool = False
+        self._rephrase_visible: bool = False
 
         # Defaults
         self.ollama_host = tk.StringVar(value=os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
