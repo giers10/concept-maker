@@ -2855,6 +2855,7 @@ class App(TkinterDnD.Tk):  # type: ignore
     def _build_session_payload(self) -> Dict:
         # Ensure corpus coverage before saving
         self._ensure_corpus_for_files(self.files, blocking=True)
+        self._ensure_corpus_for_urls(self.websites, blocking=True)
         files_meta = []
         for p in self.files:
             h = self.file_hashes.get(str(p)) or self._compute_file_hash(p)
@@ -2864,12 +2865,22 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "file_hash": h,
                 "include": bool(self.include_map.get(str(p), True)),
             })
+        websites_meta = []
+        for u in self.websites:
+            h = self.file_hashes.get(u) or self._compute_url_hash(u)
+            self.file_hashes[u] = h
+            websites_meta.append({
+                "url": u,
+                "file_hash": h,
+                "include": bool(self.include_map.get(u, True)),
+            })
         return {
             "title": (self.title_var.get() or "").strip(),
             "description": (self.desc_var.get() or "").strip(),
             "notes": self.notes.get("1.0", tk.END).strip(),
             "concept": self.concept.get("1.0", tk.END).strip(),
             "files": files_meta,
+            "websites": websites_meta,
             "saved_at": int(time.time()),
             "rephrase_variants": [{
                 "key": str(v.get("key") or ""),
