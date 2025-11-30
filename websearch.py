@@ -136,10 +136,10 @@ def _is_probably_html_url(url: str) -> bool:
         if "." not in path:
             return True
         ext = path.rsplit(".", 1)[-1]
-            return ext not in {
-                "pdf","jpg","jpeg","png","gif","webp","svg","mp4","mp3","mov","avi",
-                "zip","gz","7z","tar","rar","woff","woff2","ttf","otf"
-            }
+        return ext not in {
+            "pdf","jpg","jpeg","png","gif","webp","svg","mp4","mp3","mov","avi",
+            "zip","gz","7z","tar","rar","woff","woff2","ttf","otf"
+        }
     except Exception:
         return True
 
