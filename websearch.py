@@ -208,7 +208,7 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
         for tag in soup.select("script,style,noscript,template"):
             tag.decompose()
 
-        # Remove cookie/consent overlays by attributes or short text snippets
+        # Remove cookie/consent overlays by attributes or short text snippets (conservative)
         for el in list(soup.find_all(True)):
             if el.name in {"html", "body"}:
                 continue
@@ -219,35 +219,14 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
                 el.get("aria-label") or "",
             ]).lower()
             text_preview = (el.get_text(" ", strip=True)[:220] or "").lower()
-            if _COOKIE_HINT_RE.search(attr_str) or _COOKIE_HINT_RE.search(text_preview):
-                try:
-                    el.decompose()
-                except Exception:
-                    pass
-
-        # Remove clearly decorative/structural regions
-        for tag_name in ("header", "footer", "nav", "aside", "form", "iframe", "svg", "canvas"):
-            for t in soup.find_all(tag_name):
-                try:
-                    t.decompose()
-                except Exception:
-                    pass
-
-        # Remove elements whose id/class/role clearly mark them as noise
-        for el in list(soup.find_all(True)):
-            if el.name in {"html", "body"}:
-                continue
-            attrs = " ".join([
-                el.get("id") or "",
-                " ".join(el.get("class") or []),
-                el.get("role") or "",
-                el.get("aria-label") or "",
-            ])
-            if _NOISE_ATTR_RE.search(attrs or "") and not _CONTENT_HINT_RE.search(attrs or ""):
-                try:
-                    el.decompose()
-                except Exception:
-                    pass
+            if (_COOKIE_HINT_RE.search(attr_str) or _COOKIE_HINT_RE.search(text_preview)):
+                # only remove if looks like a small overlay/dialog, not the main body
+                full_txt = " ".join(el.get_text(" ", strip=True).split())
+                if len(text_preview) <= 260 or len(full_txt) <= 800:
+                    try:
+                        el.decompose()
+                    except Exception:
+                        pass
 
         def _norm(node):
             txt = node.get_text("\n", strip=True)
@@ -257,7 +236,7 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
 
         def _score_node(node, raw_text: str, attr_str: str) -> float:
             length = len(raw_text)
-            if length < 80:
+            if length < 40:
                 return 0.0
             link_count = len(node.find_all("a"))
             link_density = link_count / max(1.0, length / 80.0)
@@ -271,11 +250,11 @@ def _extract_text(html: str, *, max_len: int = 120_000) -> str:
             if _CONTENT_HINT_RE.search(attr_str):
                 bonus += 0.35 * length
             if _NEGATIVE_HINT_RE.search(attr_str):
-                bonus -= 0.25 * length
+                bonus -= 0.2 * length
             penalty = min(0.9, link_density * 0.6)
             return (length + bonus) * (1.0 - penalty)
 
-        # Score candidate blocks to pick main content
+        # Score candidate blocks to pick main content without over-deleting nodes
         best_text = ""
         best_score = 0.0
         for node in soup.find_all(["article", "main", "section", "div", "body"]):
