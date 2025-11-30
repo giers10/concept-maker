@@ -586,6 +586,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         self._init_storage()
         self._build_ui()
         self._refresh_rephrase_tree()
+        self._update_rephrase_visibility()
         self._maybe_enable_dnd()
         # Dirty tracking and close handler
         self._dirty = False
