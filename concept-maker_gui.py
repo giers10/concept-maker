@@ -2917,6 +2917,9 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "file_hash": h,
                 "include": bool(self.include_map.get(u, True)),
             })
+        img_prompt = self._get_image_prompt_text()
+        if img_prompt.strip() == IMAGE_PROMPT_PLACEHOLDER:
+            img_prompt = ""
         return {
             "title": (self.title_var.get() or "").strip(),
             "description": (self.desc_var.get() or "").strip(),
@@ -2931,6 +2934,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "text": str(v.get("text") or ""),
             } for v in (self.rephrase_variants or []) if isinstance(v, dict)],
             "rephrase_selected_key": self.rephrase_selected_key,
+            "image_prompt": img_prompt,
         }
 
     def _save_session(self, *, confirm_overwrite: bool, autosave: bool) -> bool:
