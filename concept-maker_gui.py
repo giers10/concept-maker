@@ -1720,6 +1720,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.notes.delete("1.0", tk.END)
             self.concept.delete("1.0", tk.END)
             self._apply_rephrase_results([], mark_dirty=False)
+            self._reset_image_prompt_area()
             self._set_status("New session")
             self._set_dirty(False)
             # Reset last-saved snapshot to clean baseline
