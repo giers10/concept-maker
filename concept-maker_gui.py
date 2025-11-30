@@ -967,6 +967,8 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.push_btn.pack(side=tk.LEFT, padx=(6,0))
         self.image_prompt_btn = ttk.Button(concept_actions, text="Generate image prompt", command=self.on_generate_image_prompt)
         self.image_prompt_btn.pack(side=tk.LEFT, padx=(6,0))
+        self.image_gen_btn = ttk.Button(concept_actions, text="Generate Image", command=self.on_generate_image)
+        self.image_gen_btn.pack(side=tk.LEFT, padx=(6,0))
 
         image_prompt_frame = ttk.LabelFrame(concept_frame, text="Image prompt")
         image_prompt_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=False, padx=(8,8), pady=(0,8))
