@@ -675,6 +675,7 @@ class App(TkinterDnD.Tk):  # type: ignore
 
         # State
         self.files: List[Path] = []
+        self.websites: List[str] = []
         self.records: List[Record] = []
         # Legacy fields kept but no longer used for per-session staging
         self.staging_dir: Optional[Path] = None
