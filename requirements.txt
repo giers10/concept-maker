@@ -19,6 +19,7 @@ opencv-python-headless
 openai-whisper
 torch
 diffusers>=0.35.2
+transformers
 
 # Notes (external binaries, install via system package manager):
 # - pandoc (for high‑quality Markdown→PDF)
