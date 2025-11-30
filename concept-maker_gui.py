@@ -35,7 +35,7 @@ import traceback
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional, Set, Any
 
 # --- GUI imports
 import tkinter as tk
@@ -389,6 +389,84 @@ Knowledge Base (source excerpts):
 {KB}
 """.strip()
 
+REPHRASE_LENSES = [
+    {
+        "key": "neutral",
+        "label": "Neutral Clarification / Expansion",
+        "prompt": """Take the following rough note and turn it into a single clear, concise paragraph that captures the main idea.
+- Keep a neutral, explanatory tone.
+- Don't add new features or speculation, only clarify and connect what is already there.
+- Output exactly one paragraph.
+
+Note:
+{USER_NOTE}
+""",
+    },
+    {
+        "key": "problem_solution",
+        "label": "Problem-Solution Framing",
+        "prompt": """Rewrite the following note as a single paragraph that clearly describes:
+1. What problem or frustration exists,
+2. For whom,
+3. How the idea could solve it in principle.
+Keep it concrete but high-level, no implementation details.
+Output exactly one paragraph.
+
+Note:
+{USER_NOTE}
+""",
+    },
+    {
+        "key": "user_story",
+        "label": "User Story / Scenario",
+        "prompt": """Rewrite the following note as a single paragraph that describes a short scenario from a user's point of view.
+Show how a specific person encounters the situation and how this idea helps them.
+Keep it realistic and simple, not hype-y.
+Output exactly one paragraph.
+
+Note:
+{USER_NOTE}
+""",
+    },
+    {
+        "key": "value_prop",
+        "label": "Value Proposition / Pitch",
+        "prompt": """Rewrite the following note as a single paragraph that sounds like a clear, simple pitch of the idea.
+Explain what it is, who it's for, and why it's valuable or interesting.
+Avoid buzzwords; keep it grounded and concrete.
+Output exactly one paragraph.
+
+Note:
+{USER_NOTE}
+""",
+    },
+    {
+        "key": "implementation",
+        "label": "Implementation / Next Steps",
+        "prompt": """Rewrite the following note as a single paragraph that keeps the original idea but focuses on how one might start implementing or exploring it.
+Mention 2-3 plausible first steps or components without going into deep technical detail.
+Output exactly one paragraph.
+
+Note:
+{USER_NOTE}
+""",
+    },
+]
+
+EXTEND_PROMPT = """
+You are continuing the user's own note. Keep writing in the same language, tone, and formatting style they used.
+
+Instructions:
+- Extend the idea with additional possibilities, use cases, angles, or problems to consider.
+- Preserve the author's voice: match their formality, punctuation habits, and quirks (e.g., all lowercase, terse bullets, or formal sentences).
+- Do not summarize or rewrite the original; add new material that flows naturally after it.
+- Keep it concise (2-5 sentences or a few short bullet points).
+- If the input is in bullet form, continue the bullets; otherwise, continue the paragraph.
+
+Original note:
+{USER_NOTE}
+""".strip()
+
 
 def build_kb_string(records: List[Record], *, max_chars: int = 80000, per_record_cap: int = 4000) -> str:
     """Format records into a compact KB string with caps to avoid overlong prompts."""
@@ -481,6 +559,9 @@ class App(TkinterDnD.Tk):  # type: ignore
         self._files_dir: Path = self._base_dir / "files"
         self._corpus_file: Path = self._base_dir / "corpus.jsonl"
         self._sessions_file: Path = self._base_dir / "sessions.jsonl"
+        self.rephrase_variants: List[Dict[str, str]] = []
+        self.rephrase_selected_key: Optional[str] = None
+        self._suppress_rephrase_select: bool = False
 
         # Defaults
         self.ollama_host = tk.StringVar(value=os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
@@ -503,6 +584,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         # Prepare unified storage and indexes
         self._init_storage()
         self._build_ui()
+        self._refresh_rephrase_tree()
         self._maybe_enable_dnd()
         # Dirty tracking and close handler
         self._dirty = False
@@ -520,6 +602,8 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "notes": "",
                 "concept": "",
                 "files": [],
+                "rephrase_variants": [],
+                "rephrase_selected_key": None,
             }
 
     def _set_app_icon(self) -> None:
@@ -652,10 +736,40 @@ class App(TkinterDnD.Tk):  # type: ignore
         # Connect scrollbar normally (always visible; resilient to squashing)
         self.notes.configure(yscrollcommand=self.notes_vsb.set)
         # No auto-hide for reliability
-        #
+        # Rephrase/variant list sits between the notes box and action buttons
+        self.rephrase_frame = ttk.Frame(notes_frame)
+        self.rephrase_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=False, padx=(8,0), pady=(6,0))
+        ttk.Label(self.rephrase_frame, text="Rephrase variants:").pack(anchor=tk.W)
+        rephrase_list_container = ttk.Frame(self.rephrase_frame)
+        rephrase_list_container.pack(fill=tk.BOTH, expand=True)
+        try:
+            rephrase_list_container.rowconfigure(0, weight=1)
+            rephrase_list_container.columnconfigure(0, weight=1)
+            rephrase_list_container.columnconfigure(1, minsize=14)
+        except Exception:
+            pass
+        self.rephrase_tree = ttk.Treeview(rephrase_list_container, columns=("variant", "preview"), show="headings", height=6, selectmode="browse")
+        self.rephrase_tree.heading("variant", text="Variant")
+        self.rephrase_tree.heading("preview", text="Preview")
+        self.rephrase_tree.column("variant", width=140, anchor=tk.W)
+        self.rephrase_tree.column("preview", width=360, anchor=tk.W)
+        try:
+            self.rephrase_tree.grid(row=0, column=0, sticky="nsew")
+        except Exception:
+            self.rephrase_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.rephrase_vsb = ttk.Scrollbar(rephrase_list_container, orient=tk.VERTICAL, command=self.rephrase_tree.yview)
+        try:
+            self.rephrase_vsb.grid(row=0, column=1, sticky="ns")
+        except Exception:
+            self.rephrase_vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.rephrase_tree.configure(yscrollcommand=self.rephrase_vsb.set)
+        self.rephrase_tree.bind("<<TreeviewSelect>>", self._on_rephrase_select)
+
         notes_actions = ttk.Frame(notes_frame)
         notes_actions.pack(side=tk.TOP, fill=tk.X, padx=(8,0), pady=(6,6))
-        ttk.Button(notes_actions, text="Generate Concept", command=self.on_generate).pack(side=tk.LEFT)
+        ttk.Button(notes_actions, text="Rephrase", command=self.on_rephrase).pack(side=tk.LEFT)
+        ttk.Button(notes_actions, text="Extend", command=self.on_extend).pack(side=tk.LEFT, padx=(6,0))
+        ttk.Button(notes_actions, text="Generate Concept", command=self.on_generate).pack(side=tk.LEFT, padx=(6,0))
         ttk.Button(notes_actions, text="Find Prior Art", command=self.on_prior_art).pack(side=tk.LEFT, padx=(6,0))
 
         # Concept editor + metadata
@@ -1113,6 +1227,172 @@ class App(TkinterDnD.Tk):  # type: ignore
         self._set_status(f"KB ready with {len(recs)} records")
         return recs
 
+    # --- Notes rephrase / extend
+    def on_rephrase(self):
+        model = (self.ollama_model.get() or "").strip()
+        if not model or model == "Select model...":
+            self._ui(lambda: messagebox.showinfo("Select model", "Please select a model first."))
+            return
+        note = self.notes.get("1.0", tk.END).strip()
+        if not note:
+            self._ui(lambda: messagebox.showinfo("No notes", "Add some notes to rephrase."))
+            return
+        self._set_status("Rephrasing…")
+        threading.Thread(target=self._rephrase_thread, args=(note, model), daemon=True).start()
+
+    def _rephrase_thread(self, note: str, model: str):
+        try:
+            client = OllamaClient(host=self.ollama_host.get())
+            variants: List[Dict[str, str]] = [{
+                "key": "original",
+                "label": "Original Note",
+                "text": note,
+            }]
+            total = len(REPHRASE_LENSES)
+            for idx, lens in enumerate(REPHRASE_LENSES, start=1):
+                self._set_status(f"Rephrasing ({idx}/{total})…")
+                prompt = (lens.get("prompt") or "").replace("{USER_NOTE}", note)
+                try:
+                    raw = client.generate(model=model, prompt=prompt)
+                except Exception as e:
+                    raise RuntimeError(f"{lens.get('label','Variant')} failed: {e}")
+                text = sanitize_llm_text_simple(raw)
+                variants.append({
+                    "key": lens.get("key") or f"lens_{idx}",
+                    "label": lens.get("label") or f"Variant {idx}",
+                    "text": text,
+                })
+            self._set_status("Rephrase complete")
+            self._ui(lambda v=variants: self._apply_rephrase_results(v, select_key="original"))
+        except Exception as e:
+            self._set_status("Rephrase failed")
+            msg = f"Rephrase failed:\n{e}"
+            self._ui(lambda m=msg: messagebox.showerror("Error", m))
+
+    def _apply_rephrase_results(self, variants: List[Dict[str, str]], *, select_key: Optional[str] = None, mark_dirty: bool = True):
+        self.rephrase_variants = variants
+        self.rephrase_selected_key = select_key or (variants[0].get("key") if variants else None)
+        self._refresh_rephrase_tree()
+        if mark_dirty:
+            self._set_dirty(True)
+
+    def _refresh_rephrase_tree(self):
+        if not hasattr(self, "rephrase_tree"):
+            return
+        try:
+            self.rephrase_tree.delete(*self.rephrase_tree.get_children())
+        except Exception:
+            return
+        if not self.rephrase_variants:
+            try:
+                self.rephrase_tree.insert('', tk.END, iid="placeholder", values=("No variants yet", "Click Rephrase to generate"))
+            except Exception:
+                pass
+            return
+        for v in self.rephrase_variants:
+            key = v.get("key") or ""
+            label = v.get("label") or key
+            preview = self._preview_rephrase_text(v.get("text", ""))
+            iid = key or str(id(v))
+            try:
+                self.rephrase_tree.insert('', tk.END, iid=iid, values=(label, preview))
+            except Exception:
+                # if iid already exists, fall back to autogenerated
+                try:
+                    self.rephrase_tree.insert('', tk.END, values=(label, preview))
+                except Exception:
+                    pass
+        key_to_select = self.rephrase_selected_key or (self.rephrase_variants[0].get("key") if self.rephrase_variants else None)
+        if key_to_select:
+            self._suppress_rephrase_select = True
+            try:
+                self.rephrase_tree.selection_set(key_to_select)
+                self.rephrase_tree.see(key_to_select)
+            except Exception:
+                pass
+            finally:
+                self._suppress_rephrase_select = False
+
+    @staticmethod
+    def _preview_rephrase_text(text: str, limit: int = 160) -> str:
+        clean = re.sub(r"\s+", " ", text or "").strip()
+        if len(clean) <= limit:
+            return clean
+        return clean[:limit].rstrip() + "..."
+
+    def _on_rephrase_select(self, _evt=None):
+        if self._suppress_rephrase_select:
+            return
+        sel = None
+        try:
+            sel = self.rephrase_tree.selection()
+        except Exception:
+            sel = None
+        if not sel:
+            return
+        key = sel[0]
+        if key == "placeholder":
+            return
+        variant = None
+        for v in self.rephrase_variants:
+            if (v.get("key") or "") == key:
+                variant = v
+                break
+        if not variant:
+            return
+        text = variant.get("text", "")
+        self.rephrase_selected_key = key
+        current = self.notes.get("1.0", tk.END).strip()
+        if current == text.strip():
+            return
+        self.notes.delete("1.0", tk.END)
+        self.notes.insert("1.0", text)
+        try:
+            self.notes.see("1.0")
+        except Exception:
+            pass
+        self._set_dirty(True)
+
+    def on_extend(self):
+        model = (self.ollama_model.get() or "").strip()
+        if not model or model == "Select model...":
+            self._ui(lambda: messagebox.showinfo("Select model", "Please select a model first."))
+            return
+        note = self.notes.get("1.0", tk.END).strip()
+        if not note:
+            self._ui(lambda: messagebox.showinfo("No notes", "Add some notes to extend."))
+            return
+        self._set_status("Extending…")
+        threading.Thread(target=self._extend_thread, args=(note, model), daemon=True).start()
+
+    def _extend_thread(self, note: str, model: str):
+        try:
+            client = OllamaClient(host=self.ollama_host.get())
+            prompt = EXTEND_PROMPT.replace("{USER_NOTE}", note)
+            raw = client.generate(model=model, prompt=prompt)
+            text = sanitize_llm_text_simple(raw)
+            if not text.strip():
+                raise RuntimeError("Empty response from model")
+            self._set_status("Extension ready")
+            def _apply():
+                existing = self.notes.get("1.0", tk.END)
+                if not existing.strip():
+                    self.notes.delete("1.0", tk.END)
+                    self.notes.insert("1.0", text)
+                else:
+                    prefix = "\n" if existing.endswith("\n") else "\n"
+                    self.notes.insert(tk.END, prefix + text)
+                try:
+                    self.notes.see(tk.END)
+                except Exception:
+                    pass
+                self._set_dirty(True)
+            self._ui(_apply)
+        except Exception as e:
+            self._set_status("Extend failed")
+            msg = f"Extend failed:\n{e}"
+            self._ui(lambda m=msg: messagebox.showerror("Error", m))
+
     # --- Concept generation
     def on_generate(self):
         # Ensure a model is selected
@@ -1195,6 +1475,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.desc_var.set("")
             self.notes.delete("1.0", tk.END)
             self.concept.delete("1.0", tk.END)
+            self._apply_rephrase_results([], mark_dirty=False)
             self._set_status("New session")
             self._set_dirty(False)
             # Reset last-saved snapshot to clean baseline
@@ -1346,6 +1627,16 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.notes.insert("1.0", s.get("notes", ""))
             self.concept.delete("1.0", tk.END)
             self.concept.insert("1.0", s.get("concept", ""))
+            rephrases_raw = s.get("rephrase_variants") or []
+            cleaned_rephrases: List[Dict[str, str]] = []
+            for v in rephrases_raw:
+                if isinstance(v, dict):
+                    cleaned_rephrases.append({
+                        "key": str(v.get("key") or ""),
+                        "label": str(v.get("label") or ""),
+                        "text": str(v.get("text") or ""),
+                    })
+            self._apply_rephrase_results(cleaned_rephrases, select_key=s.get("rephrase_selected_key"), mark_dirty=False)
 
             files = s.get("files") or []
             # Re-add files; prefer original path, fallback to symlink by hash
@@ -2047,15 +2338,26 @@ class App(TkinterDnD.Tk):  # type: ignore
             } for p in self.files]
             # stable order
             files_list.sort(key=lambda x: (x["path"], not x["include"]))
+            variants: List[Dict[str, str]] = []
+            for v in (self.rephrase_variants or []):
+                if not isinstance(v, dict):
+                    continue
+                variants.append({
+                    "key": str(v.get("key") or ""),
+                    "label": str(v.get("label") or ""),
+                    "text": str(v.get("text") or ""),
+                })
             return {
                 "title": (self.title_var.get() or "").strip(),
                 "description": (self.desc_var.get() or "").strip(),
                 "notes": self.notes.get("1.0", tk.END).strip(),
                 "concept": self.concept.get("1.0", tk.END).strip(),
                 "files": files_list,
+                "rephrase_variants": variants,
+                "rephrase_selected_key": self.rephrase_selected_key,
             }
         except Exception:
-            return {"title":"","description":"","notes":"","concept":"","files":[]}
+            return {"title":"","description":"","notes":"","concept":"","files":[],"rephrase_variants":[],"rephrase_selected_key":None}
 
     def _is_effectively_dirty(self) -> bool:
         try:
@@ -2179,6 +2481,12 @@ class App(TkinterDnD.Tk):  # type: ignore
             "concept": self.concept.get("1.0", tk.END).strip(),
             "files": files_meta,
             "saved_at": int(time.time()),
+            "rephrase_variants": [{
+                "key": str(v.get("key") or ""),
+                "label": str(v.get("label") or ""),
+                "text": str(v.get("text") or ""),
+            } for v in (self.rephrase_variants or []) if isinstance(v, dict)],
+            "rephrase_selected_key": self.rephrase_selected_key,
         }
 
     def _save_session(self, *, confirm_overwrite: bool, autosave: bool) -> bool:
@@ -2214,6 +2522,12 @@ class App(TkinterDnD.Tk):  # type: ignore
                     "notes": self.notes.get("1.0", tk.END).strip(),
                     "concept": self.concept.get("1.0", tk.END).strip(),
                     "files": [{"path": str(p), "include": bool(self.include_map.get(str(p), True))} for p in self.files],
+                    "rephrase_variants": [{
+                        "key": str(v.get("key") or ""),
+                        "label": str(v.get("label") or ""),
+                        "text": str(v.get("text") or ""),
+                    } for v in (self.rephrase_variants or []) if isinstance(v, dict)],
+                    "rephrase_selected_key": self.rephrase_selected_key,
                 }
             return True
         except Exception as e:
