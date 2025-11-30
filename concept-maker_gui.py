@@ -953,6 +953,31 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.preview_btn.pack(side=tk.LEFT)
         self.push_btn = ttk.Button(concept_actions, text="Push to Repo", command=self.on_push)
         self.push_btn.pack(side=tk.LEFT, padx=(6,0))
+        self.image_prompt_btn = ttk.Button(concept_actions, text="Generate image prompt", command=self.on_generate_image_prompt)
+        self.image_prompt_btn.pack(side=tk.LEFT, padx=(6,0))
+
+        image_prompt_frame = ttk.LabelFrame(concept_frame, text="Image prompt")
+        image_prompt_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=False, padx=(8,8), pady=(0,8))
+        image_prompt_container = ttk.Frame(image_prompt_frame)
+        image_prompt_container.pack(fill=tk.BOTH, expand=True)
+        try:
+            image_prompt_container.rowconfigure(0, weight=1)
+            image_prompt_container.columnconfigure(0, weight=1)
+            image_prompt_container.columnconfigure(1, minsize=14)
+        except Exception:
+            pass
+        self.image_prompt_text = tk.Text(image_prompt_container, height=6, wrap=tk.WORD, state=tk.DISABLED)
+        try:
+            self.image_prompt_text.grid(row=0, column=0, sticky='nsew')
+        except Exception:
+            self.image_prompt_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.image_prompt_vsb = ttk.Scrollbar(image_prompt_container, orient=tk.VERTICAL, command=self.image_prompt_text.yview)
+        try:
+            self.image_prompt_vsb.grid(row=0, column=1, sticky='ns')
+        except Exception:
+            self.image_prompt_vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.image_prompt_text.configure(yscrollcommand=self.image_prompt_vsb.set)
+        self._set_image_prompt_text("Generated image prompt will appear here.")
 
         # Bottom bar
         bottom = ttk.Frame(root)
