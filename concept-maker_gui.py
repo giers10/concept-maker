@@ -1712,8 +1712,8 @@ class App(TkinterDnD.Tk):  # type: ignore
         if not model or model == "Select model...":
             self._ui(lambda: messagebox.showinfo("Select model", "Please select a model first."))
             return
-        if not self.files and not self.notes.get("1.0", tk.END).strip():
-            self._ui(lambda: messagebox.showinfo("Nothing to do", "Add files or write some notes first."))
+        if not self.files and not self.websites and not self.notes.get("1.0", tk.END).strip():
+            self._ui(lambda: messagebox.showinfo("Nothing to do", "Add files/websites or write some notes first."))
             return
         threading.Thread(target=self._generate_concept_thread, daemon=True).start()
 
