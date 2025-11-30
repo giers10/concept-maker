@@ -1657,6 +1657,10 @@ class App(TkinterDnD.Tk):  # type: ignore
         if flag and interim_text:
             self._set_image_prompt_text(interim_text)
 
+    def _reset_image_prompt_area(self):
+        self._set_image_prompt_loading(False)
+        self._set_image_prompt_text("Generated image prompt will appear here.")
+
     def on_generate_image_prompt(self):
         model = (self.ollama_model.get() or "").strip()
         if not model or model == "Select model...":
