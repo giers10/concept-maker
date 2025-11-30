@@ -1276,6 +1276,7 @@ class App(TkinterDnD.Tk):  # type: ignore
         self.rephrase_variants = variants
         self.rephrase_selected_key = select_key or (variants[0].get("key") if variants else None)
         self._refresh_rephrase_tree()
+        self._update_rephrase_visibility()
         if mark_dirty:
             self._set_dirty(True)
 
