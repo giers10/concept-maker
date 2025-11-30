@@ -1872,6 +1872,96 @@ class App(TkinterDnD.Tk):  # type: ignore
             pass
         self._set_dirty(True)
 
+    def _set_image_gen_loading(self, flag: bool):
+        try:
+            if flag:
+                self.image_gen_btn.configure(state=tk.DISABLED, text="Generating…")
+            else:
+                self.image_gen_btn.configure(state=tk.NORMAL, text="Generate Image")
+        except Exception:
+            pass
+
+    def on_generate_image(self):
+        prompt = (self._get_image_prompt_text() or "").strip()
+        if not prompt or prompt == IMAGE_PROMPT_PLACEHOLDER:
+            self._ui(lambda: messagebox.showinfo("No prompt", "Generate an image prompt first."))
+            return
+        output_dir = filedialog.askdirectory(title="Select output folder for image")
+        if not output_dir:
+            return
+        self._set_status("Generating image…")
+        self._set_image_gen_loading(True)
+        threading.Thread(target=self._generate_image_thread, args=(prompt, Path(output_dir)), daemon=True).start()
+
+    def _load_sdxl_pipeline(self):
+        if self._sdxl_pipe is not None:
+            return self._sdxl_pipe, (self._sdxl_device or "cpu")
+        try:
+            import torch  # type: ignore
+            from diffusers import StableDiffusionXLPipeline, DPMSolverSDEScheduler  # type: ignore
+        except Exception as e:
+            raise RuntimeError(f"Diffusers/torch required for image generation: {e}")
+        model_path = Path("/Volumes/SD/ML-Models/stable-diffusion-webui/models/Stable-diffusion/SDXLModels/dreamshaperXL_v21TurboDPMSDE.safetensors")
+        if not model_path.exists():
+            raise RuntimeError(f"Model file not found: {model_path}")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        dtype = torch.float16 if device == "cuda" else torch.float32
+        pipe = StableDiffusionXLPipeline.from_single_file(str(model_path), torch_dtype=dtype)
+        try:
+            pipe.scheduler = DPMSolverSDEScheduler.from_config(pipe.scheduler.config, use_karras_sigmas=True)
+        except Exception:
+            # fall back to existing scheduler if reconfig fails
+            pass
+        pipe.to(device)
+        try:
+            pipe.enable_attention_slicing()
+        except Exception:
+            pass
+        if device == "cuda":
+            try:
+                pipe.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
+        self._sdxl_pipe = pipe
+        self._sdxl_device = device
+        return pipe, device
+
+    def _generate_image_thread(self, prompt: str, output_dir: Path):
+        try:
+            pipe, device = self._load_sdxl_pipeline()
+            try:
+                import torch  # type: ignore
+            except Exception as e_t:
+                raise RuntimeError(f"torch not available: {e_t}")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            ctx = torch.autocast(device_type="cuda", dtype=torch.float16) if device == "cuda" else contextlib.nullcontext()
+            with torch.inference_mode():
+                with ctx:
+                    res = pipe(
+                        prompt=prompt,
+                        guidance_scale=2.0,
+                        num_inference_steps=8,
+                        num_images_per_prompt=1,
+                    )
+            img = res.images[0]
+            slug = self._slug(self.title_var.get().strip() or "image")
+            ts = int(time.time())
+            fname = f"{slug}-sdxl.png" if slug else f"image-{ts}.png"
+            out_path = output_dir / fname
+            try:
+                img.save(out_path)
+            except Exception:
+                # fallback to PNG via PIL
+                from PIL import Image  # type: ignore
+                Image.fromarray(np.array(img)).save(out_path)
+            self._set_status(f"Image saved: {out_path.name}")
+            self._ui(lambda p=out_path: messagebox.showinfo("Image generated", f"Saved to:\n{p}"))
+        except Exception as e:
+            self._set_status("Image generation failed")
+            self._ui(lambda m=f"Failed to generate image:\n{e}": messagebox.showerror("Error", m))
+        finally:
+            self._ui(lambda: self._set_image_gen_loading(False))
+
     # --- Rebuild KB only
     def on_rebuild_kb(self):
         threading.Thread(target=self._rebuild_kb_thread, daemon=True).start()
