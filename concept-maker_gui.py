@@ -2806,7 +2806,15 @@ class App(TkinterDnD.Tk):  # type: ignore
             now = self._snapshot_session_state()
             last = getattr(self, "_last_saved", None)
             if last is None:
-                return any([now.get("title"), now.get("description"), now.get("notes"), now.get("concept"), now.get("files")])
+                return any([
+                    now.get("title"),
+                    now.get("description"),
+                    now.get("notes"),
+                    now.get("concept"),
+                    now.get("files"),
+                    now.get("websites"),
+                    now.get("image_prompt"),
+                ])
             return now != last
         except Exception:
             # On any error, be conservative and assume not dirty to avoid noisy prompts
