@@ -1124,6 +1124,28 @@ class App(TkinterDnD.Tk):  # type: ignore
             threading.Thread(target=self._ensure_corpus_for_files, args=(new_files,), kwargs={"blocking": True}, daemon=True).start()
         #
 
+    def _add_urls(self, urls: List[str]):
+        added = 0
+        new_urls: List[str] = []
+        for raw in urls:
+            if not raw:
+                continue
+            url = raw.strip()
+            if not re.match(r"^https?://", url, flags=re.I):
+                continue
+            if url in self.websites:
+                continue
+            self.websites.append(url)
+            self.include_map[url] = True
+            name = self._friendly_url_name(url)
+            self.tree.insert('', tk.END, values=(name, url, "url", "web", '✓'))
+            added += 1
+            new_urls.append(url)
+        if added:
+            self._set_status(f"Added {added} website(s)")
+            self._set_dirty(True)
+            threading.Thread(target=self._ensure_corpus_for_urls, args=(new_urls,), kwargs={"blocking": True}, daemon=True).start()
+
     def on_add_files(self):
         paths = filedialog.askopenfilenames(title="Select files")
         if not paths:
@@ -1136,6 +1158,16 @@ class App(TkinterDnD.Tk):  # type: ignore
             return
         self._add_paths([Path(path)])
 
+    def on_add_website(self):
+        url = simpledialog.askstring("Add Website", "Enter a URL (starting with http:// or https://):")
+        if not url:
+            return
+        url = url.strip()
+        if not re.match(r"^https?://", url, flags=re.I):
+            self._ui(lambda: messagebox.showinfo("Invalid URL", "Please enter a valid http(s) URL."))
+            return
+        self._add_urls([url])
+
     def on_remove_selected(self):
         sels = self.tree.selection()
         if not sels:
@@ -1144,11 +1176,16 @@ class App(TkinterDnD.Tk):  # type: ignore
         for item in sels:
             vals = self.tree.item(item, 'values')
             if vals:
-                p = Path(vals[1])
-                if p in self.files:
-                    self.files.remove(p)
+                path_str = str(vals[1])
+                if path_str.startswith(("http://", "https://")):
+                    if path_str in self.websites:
+                        self.websites.remove(path_str)
+                else:
+                    p = Path(path_str)
+                    if p in self.files:
+                        self.files.remove(p)
                 try:
-                    self.include_map.pop(str(p), None)
+                    self.include_map.pop(path_str, None)
                 except Exception:
                     pass
             self.tree.delete(item)
@@ -1161,6 +1198,7 @@ class App(TkinterDnD.Tk):  # type: ignore
     def on_clear_all(self):
         self.tree.delete(*self.tree.get_children())
         self.files.clear()
+        self.websites.clear()
         self.include_map.clear()
         self._set_status("Cleared")
         self._set_dirty(True)
