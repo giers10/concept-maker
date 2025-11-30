@@ -153,6 +153,9 @@ _NOISE_WORDS = {
     "search","skip","main","content"
 }
 _NOISE_ATTR_RE = re.compile(r"(cookie|consent|gdpr|banner|popup|modal|dialog|newsletter|subscribe|advert|promo|signin|signup|login|toolbar|share|social|nav|menu|footer|header)", re.I)
+_CONTENT_HINT_RE = re.compile(r"(article|content|main|post|story|entry|body|text|read|news|blog|page)", re.I)
+_NEGATIVE_HINT_RE = re.compile(r"(breadcrumb|nav|menu|sidebar|widget|footer|header|related|share|social|tagcloud|comment|reply|advert|sponsor|promo|contact|newsletter)", re.I)
+_COOKIE_HINT_RE = re.compile(r"(cookie|consent|gdpr|cmp|privacy[- ]?settings|tracking|opt[- ]?out|accept all)", re.I)
 
 
 def _clean_lines(text: str) -> str:
