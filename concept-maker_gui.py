@@ -469,6 +469,8 @@ Original note:
 {USER_NOTE}
 """.strip()
 
+IMAGE_PROMPT_PLACEHOLDER = "Generated image prompt will appear here."
+
 class IdeaCategory(str, Enum):
     APP_OR_TOOL = "APP_OR_TOOL"
     DASHBOARD_OR_ANALYTICS = "DASHBOARD_OR_ANALYTICS"
