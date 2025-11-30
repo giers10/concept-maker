@@ -1872,6 +1872,7 @@ class App(TkinterDnD.Tk):  # type: ignore
             self.notes.insert("1.0", s.get("notes", ""))
             self.concept.delete("1.0", tk.END)
             self.concept.insert("1.0", s.get("concept", ""))
+            self._reset_image_prompt_area()
             rephrases_raw = s.get("rephrase_variants") or []
             cleaned_rephrases: List[Dict[str, str]] = []
             for v in rephrases_raw:
