@@ -1088,10 +1088,23 @@ class App(TkinterDnD.Tk):  # type: ignore
             if p.is_dir():
                 for q in p.rglob('*'):
                     if q.is_file():
-                        final.append(q)
+                    final.append(q)
             elif p.exists():
                 final.append(p)
         return final
+
+    @staticmethod
+    def _friendly_url_name(url: str) -> str:
+        try:
+            parsed = urlparse(url)
+            host = parsed.netloc or url
+            path = (parsed.path or "").strip("/").split("/")
+            if path and path[0]:
+                first = path[0][:40]
+                return f"{host}/{first}"
+            return host
+        except Exception:
+            return url
 
     def _add_paths(self, paths: List[Path]):
         # Expand directories into files
@@ -1272,6 +1285,12 @@ class App(TkinterDnD.Tk):  # type: ignore
             h.update((str(path) + "|" + str(getattr(st, 'st_mtime', 0.0))).encode("utf-8", "ignore"))
         return h.hexdigest()
 
+    def _compute_url_hash(self, url: str) -> str:
+        try:
+            return hashlib.sha256(url.strip().encode("utf-8", "ignore")).hexdigest()
+        except Exception:
+            return hashlib.sha256(url.encode("utf-8", "ignore")).hexdigest()
+
     def _ensure_file_symlink(self, src: Path, file_hash: str) -> Path:
         # name pattern: {hash}__basename
         dst = self._files_dir / f"{file_hash}__{src.name}"
@@ -1346,6 +1365,50 @@ class App(TkinterDnD.Tk):  # type: ignore
                 shutil.rmtree(Path.cwd() / ".idea-hole" / "ingest_tmp" / file_hash)
             except Exception:
                 pass
+
+    def _ingest_single_url(self, url: str, url_hash: str) -> bool:
+        try:
+            self._set_status(f"Fetching {url}…")
+            try:
+                html_text, _hdrs = websearch._http_get(url, timeout=25)
+            except Exception:
+                return False
+            text = websearch._extract_text(html_text)
+            if not text.strip():
+                return False
+            title = self._friendly_url_name(url)
+            # Try a simple <title> scrape
+            try:
+                m = re.search(r"<title>(.*?)</title>", html_text, flags=re.I | re.S)
+                if m:
+                    raw_title = m.group(1)
+                    cleaned = re.sub(r"\s+", " ", raw_title)
+                    try:
+                        cleaned = html.unescape(cleaned)
+                    except Exception:
+                        pass
+                    cleaned = cleaned.strip()
+                    if cleaned:
+                        title = cleaned
+            except Exception:
+                pass
+
+            ts = int(time.time())
+            obj = {
+                "id": url,
+                "title": title,
+                "text": text,
+                "source_path": url,
+                "mime": "text/html",
+                "file_hash": url_hash,
+                "added_at": ts,
+            }
+            with self._corpus_file.open("a", encoding="utf-8") as fh_out:
+                fh_out.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            self._seen_hashes.add(url_hash)
+            return True
+        except Exception:
+            return False
 
     def _ensure_corpus_for_files(self, paths: List[Path], *, blocking: bool = True):
         if not paths:
