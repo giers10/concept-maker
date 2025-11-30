@@ -1313,6 +1313,24 @@ class App(TkinterDnD.Tk):  # type: ignore
             finally:
                 self._suppress_rephrase_select = False
 
+    def _update_rephrase_visibility(self):
+        try:
+            has = bool(self.rephrase_variants)
+            if has and not self._rephrase_visible:
+                kwargs = getattr(self, "_rephrase_pack_kwargs", None) or {}
+                before = getattr(self, "notes_actions", None)
+                if before is not None:
+                    self.rephrase_frame.pack(before=before, **kwargs)
+                else:
+                    self.rephrase_frame.pack(**kwargs)
+                self._rephrase_visible = True
+            elif not has and self._rephrase_visible:
+                self.rephrase_frame.pack_forget()
+                self._rephrase_visible = False
+        except Exception:
+            # If anything fails, leave visibility unchanged
+            pass
+
     @staticmethod
     def _preview_rephrase_text(text: str, limit: int = 160) -> str:
         clean = re.sub(r"\s+", " ", text or "").strip()
@@ -1331,8 +1349,6 @@ class App(TkinterDnD.Tk):  # type: ignore
         if not sel:
             return
         key = sel[0]
-        if key == "placeholder":
-            return
         variant = None
         for v in self.rephrase_variants:
             if (v.get("key") or "") == key:
