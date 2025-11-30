@@ -1617,6 +1617,81 @@ class App(TkinterDnD.Tk):  # type: ignore
         except Exception:
             pass
 
+    # --- Image prompt generation
+    def _get_active_idea_text(self) -> str:
+        concept_text = self.concept.get("1.0", tk.END).strip()
+        notes_text = self.notes.get("1.0", tk.END).strip()
+        title = (self.title_var.get() or "").strip()
+        desc = (self.desc_var.get() or "").strip()
+        parts: List[str] = []
+        if title:
+            parts.append(f"Title: {title}")
+        if desc:
+            parts.append(f"Description: {desc}")
+        if concept_text:
+            parts.append("Concept:\n" + concept_text)
+        elif notes_text:
+            parts.append("Notes:\n" + notes_text)
+        return "\n\n".join([p for p in parts if p]).strip()
+
+    def _set_image_prompt_text(self, text: str):
+        if not hasattr(self, "image_prompt_text"):
+            return
+        try:
+            self.image_prompt_text.configure(state=tk.NORMAL)
+            self.image_prompt_text.delete("1.0", tk.END)
+            if text:
+                self.image_prompt_text.insert("1.0", text.strip())
+            self.image_prompt_text.configure(state=tk.DISABLED)
+        except Exception:
+            pass
+
+    def _set_image_prompt_loading(self, flag: bool, *, interim_text: Optional[str] = None):
+        try:
+            if flag:
+                self.image_prompt_btn.configure(state=tk.DISABLED, text="Generating…")
+            else:
+                self.image_prompt_btn.configure(state=tk.NORMAL, text="Generate image prompt")
+        except Exception:
+            pass
+        if flag and interim_text:
+            self._set_image_prompt_text(interim_text)
+
+    def on_generate_image_prompt(self):
+        model = (self.ollama_model.get() or "").strip()
+        if not model or model == "Select model...":
+            self._ui(lambda: messagebox.showinfo("Select model", "Please select a model first."))
+            return
+        idea_text = self._get_active_idea_text()
+        if not idea_text:
+            self._ui(lambda: messagebox.showinfo("No idea", "Add concept text or notes first."))
+            return
+        self._set_status("Generating image prompt…")
+        self._set_image_prompt_loading(True, interim_text="Generating image prompt…")
+        threading.Thread(target=self._generate_image_prompt_thread, args=(idea_text, model), daemon=True).start()
+
+    def _generate_image_prompt_thread(self, idea_text: str, model: str):
+        try:
+            client = OllamaClient(host=self.ollama_host.get())
+            prompt_text = generate_image_prompt_for_idea(idea_text, client=client, model=model)
+            if not prompt_text.strip():
+                raise RuntimeError("Empty response from model")
+            self._set_status("Image prompt ready")
+            self._ui(lambda p=prompt_text: self._apply_image_prompt_result(p))
+        except Exception as e:
+            self._set_status("Image prompt failed")
+            msg = f"Failed to generate image prompt:\n{e}"
+            self._ui(lambda m=msg: messagebox.showerror("Error", m))
+        finally:
+            self._ui(lambda: self._set_image_prompt_loading(False))
+
+    def _apply_image_prompt_result(self, prompt_text: str):
+        self._set_image_prompt_text(prompt_text.strip())
+        try:
+            self.image_prompt_text.see("1.0")
+        except Exception:
+            pass
+
     # --- Rebuild KB only
     def on_rebuild_kb(self):
         threading.Thread(target=self._rebuild_kb_thread, daemon=True).start()
