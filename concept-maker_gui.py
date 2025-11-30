@@ -1149,9 +1149,11 @@ class App(TkinterDnD.Tk):  # type: ignore
             if url in self.websites:
                 continue
             self.websites.append(url)
-            self.include_map[url] = True
+            if url not in self.include_map:
+                self.include_map[url] = True
             name = self._friendly_url_name(url)
-            self.tree.insert('', tk.END, values=(name, url, "url", "web", '✓'))
+            include_flag = '✓' if self.include_map.get(url, True) else ''
+            self.tree.insert('', tk.END, values=(name, url, "url", "web", include_flag))
             added += 1
             new_urls.append(url)
         if added:
