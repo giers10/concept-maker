@@ -1448,6 +1448,41 @@ class App(TkinterDnD.Tk):  # type: ignore
         else:
             threading.Thread(target=_run, daemon=True).start()
 
+    def _ensure_corpus_for_urls(self, urls: List[str], *, blocking: bool = True):
+        if not urls:
+            return
+        to_ingest: List[tuple[str, str]] = []
+        for u in urls:
+            if not u:
+                continue
+            h = self._compute_url_hash(u)
+            self.file_hashes[u] = h
+            if h not in self._seen_hashes and h not in self._ingesting:
+                to_ingest.append((u, h))
+
+        if not to_ingest:
+            return
+
+        def _run():
+            try:
+                for url, h in to_ingest:
+                    self._ingesting.add(h)
+                    try:
+                        self._ingest_single_url(url, h)
+                    finally:
+                        try:
+                            self._ingesting.remove(h)
+                        except Exception:
+                            pass
+                self._set_status("Corpus up to date")
+            except Exception:
+                self._set_status("Corpus ingest failed (see logs)")
+
+        if blocking:
+            _run()
+        else:
+            threading.Thread(target=_run, daemon=True).start()
+
     def _load_records_for_hashes(self, hashes: Set[str]) -> List[Record]:
         out: List[Record] = []
         if not hashes:
