@@ -2740,6 +2740,11 @@ class App(TkinterDnD.Tk):  # type: ignore
             } for p in self.files]
             # stable order
             files_list.sort(key=lambda x: (x["path"], not x["include"]))
+            websites_list = [{
+                "url": str(u),
+                "include": bool(self.include_map.get(str(u), True))
+            } for u in self.websites]
+            websites_list.sort(key=lambda x: (x["url"], not x["include"]))
             variants: List[Dict[str, str]] = []
             for v in (self.rephrase_variants or []):
                 if not isinstance(v, dict):
@@ -2755,6 +2760,7 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "notes": self.notes.get("1.0", tk.END).strip(),
                 "concept": self.concept.get("1.0", tk.END).strip(),
                 "files": files_list,
+                "websites": websites_list,
                 "rephrase_variants": variants,
                 "rephrase_selected_key": self.rephrase_selected_key,
             }
