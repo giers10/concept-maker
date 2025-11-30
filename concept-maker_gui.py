@@ -2779,6 +2779,9 @@ class App(TkinterDnD.Tk):  # type: ignore
                     "label": str(v.get("label") or ""),
                     "text": str(v.get("text") or ""),
                 })
+            img_prompt = self._get_image_prompt_text()
+            if img_prompt.strip() == IMAGE_PROMPT_PLACEHOLDER:
+                img_prompt = ""
             return {
                 "title": (self.title_var.get() or "").strip(),
                 "description": (self.desc_var.get() or "").strip(),
@@ -2788,9 +2791,10 @@ class App(TkinterDnD.Tk):  # type: ignore
                 "websites": websites_list,
                 "rephrase_variants": variants,
                 "rephrase_selected_key": self.rephrase_selected_key,
+                "image_prompt": img_prompt,
             }
         except Exception:
-            return {"title":"","description":"","notes":"","concept":"","files":[],"websites":[],"rephrase_variants":[],"rephrase_selected_key":None}
+            return {"title":"","description":"","notes":"","concept":"","files":[],"websites":[],"rephrase_variants":[],"rephrase_selected_key":None,"image_prompt":""}
 
     def _is_effectively_dirty(self) -> bool:
         try:
