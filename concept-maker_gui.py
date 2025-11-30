@@ -767,6 +767,7 @@ class App(TkinterDnD.Tk):  # type: ignore
 
         notes_actions = ttk.Frame(notes_frame)
         notes_actions.pack(side=tk.TOP, fill=tk.X, padx=(8,0), pady=(6,6))
+        self.notes_actions = notes_actions
         ttk.Button(notes_actions, text="Rephrase", command=self.on_rephrase).pack(side=tk.LEFT)
         ttk.Button(notes_actions, text="Extend", command=self.on_extend).pack(side=tk.LEFT, padx=(6,0))
         ttk.Button(notes_actions, text="Generate Concept", command=self.on_generate).pack(side=tk.LEFT, padx=(6,0))
