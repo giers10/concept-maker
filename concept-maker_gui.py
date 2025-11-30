@@ -468,6 +468,129 @@ Original note:
 {USER_NOTE}
 """.strip()
 
+class IdeaCategory(str, Enum):
+    APP_OR_TOOL = "APP_OR_TOOL"
+    DASHBOARD_OR_ANALYTICS = "DASHBOARD_OR_ANALYTICS"
+    DEV_TOOL_OR_API = "DEV_TOOL_OR_API"
+    PHYSICAL_PRODUCT = "PHYSICAL_PRODUCT"
+    SYSTEM_OR_WORKFLOW = "SYSTEM_OR_WORKFLOW"
+    ABSTRACT_FRAMEWORK = "ABSTRACT_FRAMEWORK"
+    SERVICE_OR_EVENT = "SERVICE_OR_EVENT"
+    SPATIAL_DESIGN_OR_INSTALLATION = "SPATIAL_DESIGN_OR_INSTALLATION"
+    GAME_OR_WORLD = "GAME_OR_WORLD"
+    BRAND_OR_CAMPAIGN = "BRAND_OR_CAMPAIGN"
+    EDUCATIONAL_TOOL = "EDUCATIONAL_TOOL"
+    DATA_INFRASTRUCTURE = "DATA_INFRASTRUCTURE"
+
+
+VISUALIZATION_HINTS: Dict[IdeaCategory, str] = {
+    IdeaCategory.APP_OR_TOOL: "Hero UI screen on a device mockup, showing the main interface and color palette.",
+    IdeaCategory.DASHBOARD_OR_ANALYTICS: "Full-screen dashboard view with charts, cards, widgets and clear information hierarchy.",
+    IdeaCategory.DEV_TOOL_OR_API: "Stylized developer scene with screens and terminal, or a clean system architecture diagram.",
+    IdeaCategory.PHYSICAL_PRODUCT: "Hero product shot of the object, centered, photorealistic, materials and key features clearly visible.",
+    IdeaCategory.SYSTEM_OR_WORKFLOW: "Isometric system diagram showing entities and arrows, clean infographic look.",
+    IdeaCategory.ABSTRACT_FRAMEWORK: "Metaphorical, atmospheric scene representing the idea using one strong visual metaphor.",
+    IdeaCategory.SERVICE_OR_EVENT: "Lifestyle scene with people interacting in an environment, representing the experience.",
+    IdeaCategory.SPATIAL_DESIGN_OR_INSTALLATION: "Hero shot of the space or installation, wide view, with lighting and geometry clearly visible.",
+    IdeaCategory.GAME_OR_WORLD: "In-game style scene showing a player’s point of view or isometric world with the core mechanic visible.",
+    IdeaCategory.BRAND_OR_CAMPAIGN: "Bold key visual / poster with strong graphic composition and a central symbol or logo-like element.",
+    IdeaCategory.EDUCATIONAL_TOOL: "Scene with a learner interacting with an interface, or a clear diagram of the method.",
+    IdeaCategory.DATA_INFRASTRUCTURE: "Network-like visualization with nodes and connections, or a dense monitoring dashboard.",
+}
+
+
+def classify_idea(idea_text: str) -> Dict[str, Any]:
+    """Heuristic classifier based on keyword matching; returns category and visualization hint."""
+    text = (idea_text or "").lower()
+
+    def has(*phrases: str) -> bool:
+        return any(p in text for p in phrases)
+
+    category: IdeaCategory
+    if has("dashboard", "analytics", "kpi", "monitoring panel", "business intelligence"):
+        category = IdeaCategory.DASHBOARD_OR_ANALYTICS
+    elif has("observability", "traces", "logs", "infrastructure", "nodes", "monitoring", "telemetry"):
+        category = IdeaCategory.DATA_INFRASTRUCTURE
+    elif has("api", "sdk", "cli", "developer", "framework", "backend"):
+        category = IdeaCategory.DEV_TOOL_OR_API
+    elif has("device", "hardware", "physical", "furniture", "wearable", "sensor"):
+        category = IdeaCategory.PHYSICAL_PRODUCT
+    elif has("workflow", "pipeline", "automation", "process", "system architecture", "orchestration"):
+        category = IdeaCategory.SYSTEM_OR_WORKFLOW
+    elif has("mobile app", "ios", "android", "web app", "saas", "desktop app", "tool", "platform", "software"):
+        category = IdeaCategory.APP_OR_TOOL
+    elif has("framework", "philosophy", "mindset", "mental model", "metaphor"):
+        category = IdeaCategory.ABSTRACT_FRAMEWORK
+    elif has("event", "workshop", "conference", "service", "consulting", "community"):
+        category = IdeaCategory.SERVICE_OR_EVENT
+    elif has("space", "room", "gallery", "installation", "architecture", "store layout"):
+        category = IdeaCategory.SPATIAL_DESIGN_OR_INSTALLATION
+    elif has("game", "player", "level", "world", "gamified"):
+        category = IdeaCategory.GAME_OR_WORLD
+    elif has("brand", "campaign", "logo", "poster", "identity"):
+        category = IdeaCategory.BRAND_OR_CAMPAIGN
+    elif has("learning", "course", "students", "tutorial", "study", "education", "teaching"):
+        category = IdeaCategory.EDUCATIONAL_TOOL
+    else:
+        product_like = has("app", "tool", "product", "platform", "saas", "software")
+        category = IdeaCategory.APP_OR_TOOL if product_like else IdeaCategory.ABSTRACT_FRAMEWORK
+
+    return {
+        "category": category,
+        "visualization_hint": VISUALIZATION_HINTS.get(category, ""),
+    }
+
+
+def build_image_prompt_system_message(category: IdeaCategory, visualization_hint: str) -> str:
+    return f"""
+You are an expert concept artist and image prompt writer for text-to-image models.
+
+The user will give you a description of an idea: a product, project, app, physical object, system, or abstract concept.
+
+Your job:
+- Understand the idea and decide the single most effective visualization for it.
+- Then write ONE powerful, detailed image prompt.
+
+The idea has been classified as:
+- Category: {category.value}
+- Recommended visualization style: {visualization_hint}
+
+You must:
+1. Internally figure out:
+   - What matters most to show for this category (function, form, context of use, mood, or metaphor).
+   - How to best apply the recommended visualization style: {visualization_hint}.
+
+2. Choose ONE visualization approach that feels most natural and expressive for this idea.
+   You can pick any camera angle, composition, style, and mood you like, as long as it serves the idea and stays consistent with the recommended visualization style.
+
+3. In the final answer, output ONLY a single image description, as one paragraph, around 40–80 words, ready to send to an image generation model.
+
+4. In that paragraph, clearly specify:
+   - Main subject and what is happening
+   - Environment / background context
+   - Camera angle and shot type (e.g. "isometric view", "over-the-shoulder", "close-up")
+   - Art style / medium (e.g. "clean flat vector illustration", "photorealistic 3D render", "anime style", "technical blueprint")
+   - Lighting and color mood
+   - Level of detail (e.g. "highly detailed", "minimalist")
+   - Optional negative constraints if useful (e.g. "no text, no logos")
+
+5. Do NOT mention the words “user”, “idea”, “prompt”, “concept art”, or “text-to-image model”.
+   Just describe the image directly.
+
+ASSISTANT:
+(One single paragraph image description)
+""".strip()
+
+
+def generate_image_prompt_for_idea(idea_text: str, *, client: OllamaClient, model: str) -> str:
+    details = classify_idea(idea_text)
+    category: IdeaCategory = details.get("category", IdeaCategory.APP_OR_TOOL)
+    visualization_hint = details.get("visualization_hint", VISUALIZATION_HINTS.get(category, ""))
+    system_message = build_image_prompt_system_message(category, visualization_hint)
+    prompt = f"{system_message}\n\nUSER IDEA:\n{idea_text.strip()}\n\nASSISTANT:"
+    raw = client.generate(model=model, prompt=prompt)
+    return sanitize_llm_text_simple(raw)
+
 
 def build_kb_string(records: List[Record], *, max_chars: int = 80000, per_record_cap: int = 4000) -> str:
     """Format records into a compact KB string with caps to avoid overlong prompts."""
