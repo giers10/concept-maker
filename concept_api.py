@@ -255,24 +255,24 @@ INSTRUCTIONS
     Writing/Book/Article, Other}
 
 2) Tone & register:
-   - Product/Software → pragmatic PM/tech brief
-   - Research → neutral academic project brief
-   - Policy → policy memo
-   - Art/Exhibition/Performance → curator/producer note (clear, not flowery)
-   - Event → producer’s run-of-show style
-   - Education → syllabus brief
-   - Media/Publication → one-sheet
-   - Campaign/Nonprofit → strategy brief
-   - Data/ML/Infrastructure → engineering design note
-   - Game/Interactive → design doc overview
-   - Writing/Book/Article → proposal overview
+   - Product/Software -> pragmatic PM/tech brief
+   - Research -> neutral academic project brief
+   - Policy -> policy memo
+   - Art/Exhibition/Performance -> curator/producer note (clear, not flowery)
+   - Event -> producer's run-of-show style
+   - Education -> syllabus brief
+   - Media/Publication -> one-sheet
+   - Campaign/Nonprofit -> strategy brief
+   - Data/ML/Infrastructure -> engineering design note
+   - Game/Interactive -> design doc overview
+   - Writing/Book/Article -> proposal overview
 
 3) Output Markdown using these core sections (use these exact headings; include only relevant ones):
 - Overview & Intent
 - Context / Problem (or Opportunity)
 - Audience / Stakeholders
 - Deliverables / Outputs & Scope
-- Approach / Method  (rename to “Methodology”, “Implementation Plan”, “Format & Installation Plan”, etc., to fit the idea type)
+- Approach / Method  (rename to "Methodology", "Implementation Plan", "Format & Installation Plan", etc., to fit the idea type)
 - Resources / Budget / Tools  (only if present; else add a short TODO)
 - Timeline & Milestones
 - Risks, Ethics & Constraints
@@ -294,7 +294,7 @@ Add one domain-specific block (only if relevant and supported by sources):
 
 4) Evidence use:
 - Use only facts in Notes/KB. If missing, add short TODOs instead of inventing.
-- Where a claim relies on a specific source, include a short inline blockquote with “Source: <Path or Title>”.
+- Where a claim relies on a specific source, include a short inline blockquote with "Source: <Path or Title>".
 
 5) Assets:
 - These files are committed alongside README.md. Embed images with Markdown and link documents where they help clarity.
@@ -306,7 +306,7 @@ STYLE
 
 TITLE
 - Generate a neutral 2-4 words working title.
-- Begin the document with “# {Title}”.
+- Begin the document with "# {Title}".
 
 Assets Provided:
 {ASSETS}
@@ -423,7 +423,7 @@ VISUALIZATION_HINTS: Dict[IdeaCategory, str] = {
     IdeaCategory.ABSTRACT_FRAMEWORK: "Metaphorical, atmospheric scene representing the idea using one strong visual metaphor.",
     IdeaCategory.SERVICE_OR_EVENT: "Lifestyle scene with people interacting in an environment, representing the experience.",
     IdeaCategory.SPATIAL_DESIGN_OR_INSTALLATION: "Hero shot of the space or installation, wide view, with lighting and geometry clearly visible.",
-    IdeaCategory.GAME_OR_WORLD: "In-game style scene showing a player’s point of view or isometric world with the core mechanic visible.",
+    IdeaCategory.GAME_OR_WORLD: "In-game style scene showing a player's point of view or isometric world with the core mechanic visible.",
     IdeaCategory.BRAND_OR_CAMPAIGN: "Bold key visual / poster with strong graphic composition and a central symbol or logo-like element.",
     IdeaCategory.EDUCATIONAL_TOOL: "Scene with a learner interacting with an interface, or a clear diagram of the method.",
     IdeaCategory.DATA_INFRASTRUCTURE: "Network-like visualization with nodes and connections, or a dense monitoring dashboard.",
@@ -492,7 +492,7 @@ You must:
 2. Choose ONE visualization approach that feels most natural and expressive for this idea.
    You can pick any camera angle, composition, style, and mood you like, as long as it serves the idea and stays consistent with the recommended visualization style.
 
-3. In the final answer, output ONLY a single image description, as one paragraph, around 40–80 words, ready to send to an image generation model.
+3. In the final answer, output ONLY a single image description, as one paragraph, around 40-80 words, ready to send to an image generation model.
 
 4. In that paragraph, clearly specify:
    - Main subject and what is happening
@@ -503,7 +503,7 @@ You must:
    - Level of detail (e.g. "highly detailed", "minimalist")
    - Optional negative constraints if useful (e.g. "no text, no logos")
 
-5. Do NOT mention the words “user”, “idea”, “prompt”, “concept art”, or “text-to-image model”.
+5. Do NOT mention the words "user", "idea", "prompt", "concept art", or "text-to-image model".
    Just describe the image directly.
 
 ASSISTANT:
@@ -569,8 +569,8 @@ def md_heading_replace_or_insert(md: str, title: str) -> str:
 
 def strip_wrapping_quotes(s: str) -> str:
     s = s.strip()
-    s = re.sub(r"^[\"'“”‘’]+", "", s)
-    s = re.sub(r"[\"'“”‘’]+$", "", s)
+    s = re.sub(r"^[\"'""'']+", "", s)
+    s = re.sub(r"[\"'""'']+$", "", s)
     return s
 
 
@@ -676,10 +676,10 @@ class ConceptEngine:
             tmp_out = tmp_dir / "out.jsonl"
             ok = False
             if external is not None:
-                self._status(f"Indexing {src.name} (external)…")
+                self._status(f"Indexing {src.name} (external)...")
                 ok = external.build(tmp_dir, tmp_out, workers=2, verbose=verbose)
             if not ok:
-                self._status(f"Indexing {src.name} (simple)…")
+                self._status(f"Indexing {src.name} (simple)...")
                 try:
                     simple = SimpleCorpusBuilder()
                     recs = simple.build(tmp_dir, tmp_out)
@@ -716,7 +716,7 @@ class ConceptEngine:
 
     def _ingest_single_url(self, url: str, url_hash: str) -> bool:
         try:
-            self._status(f"Fetching {url}…")
+            self._status(f"Fetching {url}...")
             try:
                 html_text, _hdrs = websearch._http_get(url, timeout=25)
             except Exception:
@@ -1095,7 +1095,7 @@ def _write_concepts_index(repo_dir: Path) -> None:
             items.append((slug, title, desc))
 
         intro = (
-            "This folder contains a library of project concepts created with the Idea → Concept tool. "
+            "This folder contains a library of project concepts created with the Idea -> Concept tool. "
             "Each entry links to its folder with the original concept README and related assets."
         )
         lines: List[str] = []
@@ -1105,7 +1105,7 @@ def _write_concepts_index(repo_dir: Path) -> None:
         lines.append("")
         for slug, title, desc in items:
             if desc:
-                lines.append(f"- [{title}](./{slug}/) — {desc}")
+                lines.append(f"- [{title}](./{slug}/) - {desc}")
             else:
                 lines.append(f"- [{title}](./{slug}/)")
         (repo_dir / "README.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
