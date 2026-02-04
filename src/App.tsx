@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrent } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 const IMAGE_PROMPT_PLACEHOLDER = "Generated image prompt will appear here.";
 
@@ -136,9 +136,9 @@ export default function App() {
     let unlisten: (() => void) | undefined;
     const attach = async () => {
       try {
-        const current = getCurrent() as any;
-        unlisten = await current.onFileDropEvent((event: any) => {
-          if (event.payload.type === "drop") {
+        const current = getCurrentWebview() as any;
+        unlisten = await current.onDragDropEvent((event: any) => {
+          if (event.payload?.type === "drop") {
             const paths = event.payload.paths ?? [];
             if (paths.length) {
               void addFilesByPath(paths, true);
