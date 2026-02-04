@@ -136,8 +136,8 @@ export default function App() {
     let unlisten: (() => void) | undefined;
     const attach = async () => {
       try {
-        const current = getCurrent();
-        unlisten = await current.onFileDropEvent((event) => {
+        const current = getCurrent() as any;
+        unlisten = await current.onFileDropEvent((event: any) => {
           if (event.payload.type === "drop") {
             const paths = event.payload.paths ?? [];
             if (paths.length) {
