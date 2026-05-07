@@ -17,7 +17,6 @@ opencv-python-headless
 # Optional (ASR for audio/video in corpus_builder.py)
 openai-whisper
 torch
-diffusers>=0.35.2
 transformers
 
 # Notes (external binaries, install via system package manager):
