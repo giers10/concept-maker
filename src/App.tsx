@@ -54,6 +54,10 @@ async function runBackend<T>(action: string, payload: Record<string, unknown>): 
   return (await invoke("run_python_action", { action, payload })) as T;
 }
 
+async function openPath(path: string): Promise<void> {
+  await invoke("open_path", { path });
+}
+
 function formatTime(ts: number): string {
   if (!ts) return "";
   const d = new Date(ts * 1000);
@@ -465,8 +469,15 @@ export default function App() {
         include_map: includeMap,
       });
       if (result.ok) {
-        setStatus("Preview PDF ready");
-        window.alert(`Preview PDF saved to:\n${result.pdf_path}`);
+        setStatus("Opening preview PDF...");
+        try {
+          await openPath(result.pdf_path);
+          setStatus("Preview PDF opened");
+        } catch (openErr) {
+          setStatus("Preview PDF ready");
+          console.error(openErr);
+          window.alert(`Preview PDF saved to:\n${result.pdf_path}\n\nCould not open it automatically.`);
+        }
       } else {
         setStatus("Preview failed");
         window.alert(`Preview failed. Log: ${result.log_path}`);
