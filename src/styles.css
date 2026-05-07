@@ -403,6 +403,28 @@ select {
   color: var(--accent);
 }
 
+.website-window {
+  width: min(460px, 92vw);
+}
+
+.website-form {
+  display: grid;
+  gap: 10px;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
