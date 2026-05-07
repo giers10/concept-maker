@@ -72,7 +72,9 @@ function rowId(row: RowEntry): string {
 }
 
 export default function App() {
-  const [status, setStatus] = useState("Ready");
+  const [status, setStatusMessage] = useState("");
+  const [statusVersion, setStatusVersion] = useState(0);
+  const [statusVisible, setStatusVisible] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [websites, setWebsites] = useState<UrlEntry[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -104,6 +106,25 @@ export default function App() {
     () => (markdownPreview ? markdownToHTML(concept) : ""),
     [concept, markdownPreview]
   );
+
+  const setStatus = (message: string) => {
+    setStatusMessage(message);
+    setStatusVersion((value) => value + 1);
+  };
+
+  useEffect(() => {
+    if (!status) {
+      setStatusVisible(false);
+      return;
+    }
+
+    setStatusVisible(true);
+    const timer = window.setTimeout(() => {
+      setStatusVisible(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [status, statusVersion]);
 
   useEffect(() => {
     let mounted = true;
@@ -688,10 +709,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="top-bar">
-        <div className="status-pill">{status}</div>
-      </div>
-
       <div className="panes">
         <div className="column">
           <section className="panel">
@@ -1002,6 +1019,12 @@ export default function App() {
               <button onClick={() => setPriorModalOpen(false)}>Close</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {statusVisible && status && (
+        <div className="status-toast" role="status" aria-live="polite">
+          {status}
         </div>
       )}
     </div>
