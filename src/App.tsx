@@ -399,33 +399,6 @@ export default function App() {
     }
   };
 
-  const onGenerateImage = async () => {
-    if (!imagePrompt.trim() || imagePrompt === IMAGE_PROMPT_PLACEHOLDER) {
-      window.alert("Generate an image prompt first.");
-      return;
-    }
-    const output = await open({ directory: true, title: "Select output folder" });
-    if (!output) return;
-    const outputDir = Array.isArray(output) ? output[0] : output;
-    setBusy((prev) => ({ ...prev, imageGen: true }));
-    setStatus("Generating image...");
-    try {
-      const result = await runBackend<{ output_path: string }>("generate_image", {
-        prompt: imagePrompt,
-        output_dir: outputDir,
-        title,
-      });
-      setStatus(`Image saved: ${result.output_path}`);
-      window.alert(`Image saved to:\n${result.output_path}`);
-    } catch (err) {
-      setStatus("Image generation failed");
-      console.error(err);
-      window.alert("Image generation failed. Check console for details.");
-    } finally {
-      setBusy((prev) => ({ ...prev, imageGen: false }));
-    }
-  };
-
   const onPriorArt = async () => {
     if (!ollamaModel || ollamaModel === "Select model...") {
       window.alert("Please select a model first.");
@@ -765,7 +738,6 @@ export default function App() {
                 {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
               </button>
               <button onClick={onGenerateImagePrompt} disabled={busy.imagePrompt}>Generate image prompt</button>
-              <button onClick={onGenerateImage} disabled={busy.imageGen}>Generate Image</button>
             </div>
             <textarea
               className="image-prompt"
