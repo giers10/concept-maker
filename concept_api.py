@@ -583,7 +583,6 @@ class ConceptEngine:
         self.files: List[Path] = []
         self.websites: List[str] = []
         self.records: List[Record] = []
-        self.include_map: Dict[str, bool] = {}
         self.file_hashes: Dict[str, str] = {}
         self._seen_hashes: Set[str] = set()
         self._ingesting: Set[str] = set()
