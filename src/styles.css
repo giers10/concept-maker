@@ -42,6 +42,7 @@ body {
 }
 
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -49,18 +50,15 @@ body {
   gap: 14px;
 }
 
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-}
-
-.status-pill {
+.status-toast {
+  position: absolute;
+  right: 24px;
+  bottom: 18px;
+  z-index: 9;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: min(520px, 100%);
+  max-width: min(420px, calc(100vw - 48px));
   padding: 8px 14px;
   border: 1px solid var(--panel-edge);
   border-radius: var(--radius);
@@ -69,6 +67,8 @@ body {
   font-weight: 600;
   font-size: 13px;
   overflow-wrap: anywhere;
+  box-shadow: var(--dialog-shadow);
+  pointer-events: none;
 }
 
 .panes {
@@ -425,10 +425,6 @@ select {
 }
 
 @media (max-width: 720px) {
-  .top-bar {
-    justify-content: flex-start;
-  }
-
   .table-header,
   .table-row {
     grid-template-columns: 1.2fr 1.8fr 0.6fr 0.6fr 0.6fr;
