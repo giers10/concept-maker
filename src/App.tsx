@@ -354,7 +354,6 @@ export default function App() {
           notes,
           files: files.map((f) => f.path),
           websites: websites.map((w) => w.url),
-          include_map: includeMap,
           ollama_host: ollamaHost,
           model: ollamaModel,
         }
@@ -442,7 +441,6 @@ export default function App() {
         notes,
         files: files.map((f) => f.path),
         websites: websites.map((w) => w.url),
-        include_map: includeMap,
         ollama_host: ollamaHost,
         model: ollamaModel,
         searx_url: searxUrl,
@@ -471,7 +469,6 @@ export default function App() {
         concept,
         title,
         files: files.map((f) => f.path),
-        include_map: includeMap,
       });
       if (result.ok) {
         setStatus("Opening preview PDF...");
@@ -531,8 +528,8 @@ export default function App() {
           description,
           notes,
           concept,
-          files: files.map((f) => ({ path: f.path, include: f.include })),
-          websites: websites.map((w) => ({ url: w.url, include: w.include })),
+          files: files.map((f) => ({ path: f.path })),
+          websites: websites.map((w) => ({ url: w.url })),
           rephrase_variants: rephraseVariants,
           rephrase_selected_key: rephraseSelected,
           image_prompt: imagePrompt === IMAGE_PROMPT_PLACEHOLDER ? "" : imagePrompt,
@@ -572,7 +569,6 @@ export default function App() {
           name: f.path.split(/[\\/]/).pop() || f.path,
           type: (f.path.split(".").pop() || "file").toLowerCase(),
           size: "?",
-          include: f.include ?? true,
         }))
       );
       setWebsites(
@@ -582,7 +578,6 @@ export default function App() {
           name: w.url.replace(/^https?:\/\//, "").slice(0, 60),
           type: "url",
           size: "web",
-          include: w.include ?? true,
         }))
       );
       setRephraseVariants(data.rephrase_variants || []);
@@ -652,7 +647,6 @@ export default function App() {
                 <div>Path</div>
                 <div>Type</div>
                 <div>Size</div>
-                <div>Add to Repo</div>
               </div>
               <div className="table-body">
                 {rows.length === 0 && (
@@ -670,14 +664,6 @@ export default function App() {
                     <div>{row.kind === "file" ? row.path : row.url}</div>
                     <div>{row.type}</div>
                     <div>{row.size}</div>
-                    <div
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggleInclude(row);
-                      }}
-                    >
-                      <div className={`checkbox ${row.include ? "checked" : ""}`}>{row.include ? "✓" : ""}</div>
-                    </div>
                   </div>
                 ))}
               </div>
