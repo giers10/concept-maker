@@ -105,10 +105,15 @@ body {
 .files-panel {
   flex: 0 1 33%;
   max-height: 33%;
+  overflow: hidden;
 }
 
 .files-panel .table {
   flex: 1;
+  min-height: 0;
+}
+
+.files-panel .table-body {
   min-height: 0;
 }
 
