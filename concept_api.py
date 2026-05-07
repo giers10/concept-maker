@@ -9,7 +9,6 @@ This module exposes JSON actions for the Tauri UI without desktop toolkit import
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import html
 import json
@@ -1252,87 +1251,6 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
 
 
 # -----------------------------
-# Image generation
-# -----------------------------
-
-def _load_sdxl_pipeline():
-    try:
-        import torch  # type: ignore
-        from diffusers import StableDiffusionXLPipeline, DPMSolverSDEScheduler  # type: ignore
-    except Exception as e:
-        raise RuntimeError(f"Diffusers/torch required for image generation: {e}")
-    model_path = Path("/Volumes/SD/ML-Models/stable-diffusion-webui/models/Stable-diffusion/SDXLModels/dreamshaperXL_v21TurboDPMSDE.safetensors")
-    if not model_path.exists():
-        raise RuntimeError(f"Model file not found: {model_path}")
-    has_mps = bool(getattr(torch.backends, "mps", None) and torch.backends.mps.is_available())
-    device = "cuda" if torch.cuda.is_available() else "mps" if has_mps else "cpu"
-    dtype = torch.float16 if device == "cuda" else torch.float32
-    pipe = StableDiffusionXLPipeline.from_single_file(
-        str(model_path),
-        torch_dtype=dtype,
-        safety_checker=None,
-        feature_extractor=None,
-    )
-    try:
-        pipe.scheduler = DPMSolverSDEScheduler.from_config(pipe.scheduler.config, use_karras_sigmas=True)
-    except Exception:
-        pass
-    pipe.to(device)
-    try:
-        pipe.enable_attention_slicing()
-    except Exception:
-        pass
-    try:
-        pipe.enable_vae_slicing()
-        pipe.enable_vae_tiling()
-    except Exception:
-        pass
-    try:
-        pipe.set_progress_bar_config(disable=True)
-    except Exception:
-        pass
-    if device == "cuda":
-        try:
-            pipe.enable_xformers_memory_efficient_attention()
-        except Exception:
-            pass
-    return pipe, device
-
-
-def generate_image(prompt: str, output_dir: Path, title: str) -> Path:
-    try:
-        import torch  # type: ignore
-    except Exception as e:
-        raise RuntimeError(f"torch not available: {e}")
-    pipe, device = _load_sdxl_pipeline()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    ctx = torch.autocast(device_type=device, dtype=torch.float16) if device == "cuda" else contextlib.nullcontext()
-    generator = torch.Generator(device=device) if device != "cpu" else None
-    with torch.inference_mode():
-        with ctx:
-            res = pipe(
-                prompt=prompt,
-                guidance_scale=2.0,
-                num_inference_steps=6,
-                num_images_per_prompt=1,
-                height=1024,
-                width=1024,
-                generator=generator,
-            )
-    img = res.images[0]
-    slug = _slug(title or "image")
-    ts = int(time.time())
-    fname = f"{slug}-sdxl-{ts}.png" if slug else f"image-{ts}.png"
-    out_path = output_dir / fname
-    try:
-        img.save(out_path)
-    except Exception:
-        from PIL import Image  # type: ignore
-        Image.fromarray(img).save(out_path)
-    return out_path
-
-
-# -----------------------------
 # Settings
 # -----------------------------
 
@@ -1597,14 +1515,6 @@ def main() -> int:
             result = prior_art(payload)
         elif action == "preview_pdf":
             result = preview_pdf(payload)
-        elif action == "generate_image":
-            prompt = payload.get("prompt") or ""
-            out_dir = Path(payload.get("output_dir") or "")
-            title = payload.get("title") or ""
-            if not prompt or not out_dir:
-                raise RuntimeError("Missing prompt or output_dir")
-            out_path = generate_image(prompt, out_dir, title)
-            result = {"output_path": str(out_path)}
         elif action == "load_settings":
             result = load_settings()
         elif action == "save_settings":
