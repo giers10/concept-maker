@@ -631,6 +631,7 @@ export default function App() {
                 <div>Path</div>
                 <div>Type</div>
                 <div>Size</div>
+                <div>Remove</div>
               </div>
               <div className="table-body">
                 {rows.length === 0 && (
@@ -639,15 +640,22 @@ export default function App() {
                   </div>
                 )}
                 {rows.map((row) => (
-                  <div
-                    key={rowId(row)}
-                    className={`table-row ${selectedRows.has(rowId(row)) ? "selected" : ""}`}
-                    onClick={() => toggleRowSelection(row)}
-                  >
+                  <div key={rowId(row)} className="table-row">
                     <div>{row.name}</div>
                     <div>{row.kind === "file" ? row.path : row.url}</div>
                     <div>{row.type}</div>
                     <div>{row.size}</div>
+                    <div>
+                      <button
+                        className="remove-row-button danger"
+                        type="button"
+                        onClick={() => onRemoveRow(row)}
+                        aria-label={`Remove ${row.name}`}
+                        title={`Remove ${row.name}`}
+                      >
+                        X
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -656,8 +664,6 @@ export default function App() {
               <button onClick={onAddFiles}>Add Files</button>
               <button onClick={onAddFolder}>Add Folder</button>
               <button onClick={onAddWebsite}>Add Website</button>
-              <button onClick={onRemoveSelected} className="danger">Remove Selected</button>
-              <button onClick={onClearAll} className="danger">Clear All</button>
             </div>
           </section>
 
