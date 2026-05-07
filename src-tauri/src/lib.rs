@@ -77,10 +77,37 @@ fn run_python_action(action: String, payload: Value) -> Result<Value, String> {
   }
 }
 
+#[tauri::command]
+fn open_path(path: String) -> Result<(), String> {
+  let path = PathBuf::from(path);
+  if !path.exists() {
+    return Err(format!("Path does not exist: {}", path.display()));
+  }
+
+  let mut command = if cfg!(target_os = "macos") {
+    let mut command = Command::new("open");
+    command.arg(&path);
+    command
+  } else if cfg!(target_os = "windows") {
+    let mut command = Command::new("cmd");
+    command.arg("/C").arg("start").arg("").arg(&path);
+    command
+  } else {
+    let mut command = Command::new("xdg-open");
+    command.arg(&path);
+    command
+  };
+
+  command
+    .spawn()
+    .map(|_| ())
+    .map_err(|err| format!("Failed to open {}: {err}", path.display()))
+}
+
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
-    .invoke_handler(tauri::generate_handler![run_python_action])
+    .invoke_handler(tauri::generate_handler![run_python_action, open_path])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
