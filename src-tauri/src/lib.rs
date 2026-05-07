@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::{
@@ -10,6 +12,93 @@ use tauri::{
 fn repo_root() -> PathBuf {
   let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   manifest_dir.parent().unwrap_or(&manifest_dir).to_path_buf()
+}
+
+fn sessions_file() -> PathBuf {
+  repo_root().join(".idea-hole").join("sessions.jsonl")
+}
+
+#[derive(Deserialize)]
+struct SessionFields {
+  title: Option<String>,
+  description: Option<String>,
+  saved_at: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct SessionSummary {
+  title: String,
+  description: String,
+  saved_at: i64,
+}
+
+fn open_sessions_file() -> Result<Option<File>, String> {
+  match File::open(sessions_file()) {
+    Ok(file) => Ok(Some(file)),
+    Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+    Err(err) => Err(format!("Failed to open sessions file: {err}")),
+  }
+}
+
+fn session_summary_from_line(line: &str) -> Option<SessionSummary> {
+  let fields: SessionFields = serde_json::from_str(line).ok()?;
+  let title = fields.title.unwrap_or_default().trim().to_string();
+  if title.is_empty() {
+    return None;
+  }
+
+  Some(SessionSummary {
+    title,
+    description: fields.description.unwrap_or_default(),
+    saved_at: fields.saved_at.unwrap_or_default(),
+  })
+}
+
+fn list_sessions_fast() -> Result<Vec<SessionSummary>, String> {
+  let Some(file) = open_sessions_file()? else {
+    return Ok(Vec::new());
+  };
+
+  let mut sessions = Vec::new();
+  for line in BufReader::new(file).lines() {
+    let line = line.map_err(|err| format!("Failed to read sessions file: {err}"))?;
+    if line.trim().is_empty() {
+      continue;
+    }
+    if let Some(summary) = session_summary_from_line(&line) {
+      sessions.push(summary);
+    }
+  }
+
+  Ok(sessions)
+}
+
+fn load_session_fast(title: &str) -> Result<Value, String> {
+  let target = title.trim();
+  if target.is_empty() {
+    return Ok(Value::Null);
+  }
+
+  let Some(file) = open_sessions_file()? else {
+    return Ok(Value::Null);
+  };
+
+  for line in BufReader::new(file).lines() {
+    let line = line.map_err(|err| format!("Failed to read sessions file: {err}"))?;
+    if line.trim().is_empty() {
+      continue;
+    }
+
+    let Some(summary) = session_summary_from_line(&line) else {
+      continue;
+    };
+    if summary.title == target {
+      return serde_json::from_str(&line)
+        .map_err(|err| format!("Failed to parse saved session: {err}"));
+    }
+  }
+
+  Ok(Value::Null)
 }
 
 fn run_python(script: &str, input: &str) -> Result<Vec<u8>, String> {
@@ -58,6 +147,17 @@ fn run_python(script: &str, input: &str) -> Result<Vec<u8>, String> {
 
 #[tauri::command]
 fn run_python_action(action: String, payload: Value) -> Result<Value, String> {
+  match action.as_str() {
+    "list_sessions" => {
+      return serde_json::to_value(list_sessions_fast()?).map_err(|err| err.to_string());
+    }
+    "load_session" => {
+      let title = payload.get("title").and_then(Value::as_str).unwrap_or("");
+      return load_session_fast(title);
+    }
+    _ => {}
+  }
+
   let script = repo_root().join("concept_api.py");
   if !script.exists() {
     return Err("concept_api.py not found".to_string());
