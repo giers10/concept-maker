@@ -8,7 +8,7 @@ A Tauri desktop app that turns raw ideas, notes, URLs, and files into a clear pr
 - Write freeform notes and ask a local Ollama model to rephrase, extend, or generate a concept.
 - Build a JSONL knowledge base from selected files using `corpus_builder.py` when available, with a lightweight fallback in the backend.
 - Search for prior art through SearXNG and Ollama embeddings.
-- Preview concepts as Markdown/PDF and save them into a local concepts repo.
+- Preview concepts as Markdown/PDF.
 - Generate an image prompt and optional image asset for a concept.
 - Save and reopen local sessions.
 
@@ -90,7 +90,6 @@ Environment variables:
 
 - `OLLAMA_HOST`: override the Ollama URL
 - `IDEA_HOLE_MODEL`: default model name
-- `IDEA_HOLE_REMOTE`: default Git remote URL
 - `SEARX_URL`: default SearXNG base URL
 
-Runtime data is stored in `.idea-hole/`, and generated concepts are stored under `concepts/` unless another repo folder is selected in the app.
+Runtime data is stored in `.idea-hole/`.
