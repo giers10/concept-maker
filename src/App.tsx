@@ -263,8 +263,6 @@ export default function App() {
     setWebsiteInput("");
     setWebsiteError("");
   };
-    });
-  };
 
   const onRemoveRow = (row: RowEntry) => {
     const label = row.kind === "file" ? row.path : row.url;
@@ -718,7 +716,7 @@ export default function App() {
             </div>
             <div className="controls">
               <button onClick={onAddFiles}>Add Files</button>
-              <button onClick={onAddWebsite}>Add Website</button>
+              <button onClick={onAddWebsite}>Add URL</button>
             </div>
           </section>
         </div>
@@ -772,6 +770,55 @@ export default function App() {
           </section>
         </div>
       </div>
+
+      {websiteModalOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeWebsiteModal();
+            }
+          }}
+        >
+          <form
+            className="settings-window website-window"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="website-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSubmitWebsite();
+            }}
+          >
+            <div className="settings-header">
+              <h3 id="website-title">Add URL</h3>
+              <button className="ghost" type="button" onClick={closeWebsiteModal}>
+                Close
+              </button>
+            </div>
+            <div className="website-form">
+              <label htmlFor="website-url">URL</label>
+              <input
+                id="website-url"
+                autoFocus
+                value={websiteInput}
+                onChange={(event) => {
+                  setWebsiteInput(event.target.value);
+                  if (websiteError) setWebsiteError("");
+                }}
+                placeholder="https://example.com"
+                type="url"
+              />
+              {websiteError && <div className="form-error">{websiteError}</div>}
+              <div className="form-actions">
+                <button type="button" onClick={closeWebsiteModal}>Cancel</button>
+                <button className="primary" type="submit">Add URL</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
 
       {sessionModalOpen && (
         <div
