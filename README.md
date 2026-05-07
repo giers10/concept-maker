@@ -51,16 +51,16 @@ ollama serve
 
 ## Development
 
-Run the web UI only:
+Run the desktop app:
 
 ```bash
 npm run dev
 ```
 
-Run the desktop app:
+Run the web UI in a browser:
 
 ```bash
-npm run tauri dev
+npm run dev:web
 ```
 
 Build the frontend:
