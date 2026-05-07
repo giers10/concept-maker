@@ -20,9 +20,9 @@ fn sessions_file() -> PathBuf {
 
 #[derive(Deserialize)]
 struct SessionFields {
-    title: Option<String>,
-    description: Option<String>,
-    saved_at: Option<i64>,
+    title: Option<Value>,
+    description: Option<Value>,
+    saved_at: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -42,16 +42,37 @@ fn open_sessions_file() -> Result<Option<File>, String> {
 
 fn session_summary_from_line(line: &str) -> Option<SessionSummary> {
     let fields: SessionFields = serde_json::from_str(line).ok()?;
-    let title = fields.title.unwrap_or_default().trim().to_string();
+    let title = json_value_to_string(fields.title).trim().to_string();
     if title.is_empty() {
         return None;
     }
 
     Some(SessionSummary {
         title,
-        description: fields.description.unwrap_or_default(),
-        saved_at: fields.saved_at.unwrap_or_default(),
+        description: json_value_to_string(fields.description),
+        saved_at: json_value_to_i64(fields.saved_at),
     })
+}
+
+fn json_value_to_string(value: Option<Value>) -> String {
+    match value {
+        Some(Value::String(text)) => text,
+        Some(Value::Number(number)) => number.to_string(),
+        Some(Value::Bool(value)) => value.to_string(),
+        _ => String::new(),
+    }
+}
+
+fn json_value_to_i64(value: Option<Value>) -> i64 {
+    match value {
+        Some(Value::Number(number)) => number
+            .as_i64()
+            .or_else(|| number.as_u64().and_then(|value| i64::try_from(value).ok()))
+            .or_else(|| number.as_f64().map(|value| value as i64))
+            .unwrap_or_default(),
+        Some(Value::String(text)) => text.parse::<i64>().unwrap_or_default(),
+        _ => 0,
+    }
 }
 
 fn list_sessions_fast() -> Result<Vec<SessionSummary>, String> {
