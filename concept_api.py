@@ -1011,105 +1011,14 @@ def _extract_title_desc(concept_md: str, *, client: OllamaClient, model: str) ->
 
 
 # -----------------------------
-# Git helpers and PDF conversion
+# PDF conversion helpers
 # -----------------------------
-
-def _run_git(repo_dir: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=str(repo_dir), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-
-def _ensure_repo_initialized(repo_dir: Path) -> None:
-    repo_dir.mkdir(parents=True, exist_ok=True)
-    if not (repo_dir / ".git").exists():
-        _ = subprocess.run(["git", "init"], cwd=str(repo_dir), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-
-def _ensure_remote_origin(repo_dir: Path, remote_url: str) -> None:
-    if not remote_url:
-        return
-    res = _run_git(repo_dir, "remote", "get-url", "origin")
-    if res.returncode == 0:
-        current = (res.stdout or "").strip()
-        if current != remote_url:
-            _ = _run_git(repo_dir, "remote", "set-url", "origin", remote_url)
-    else:
-        _ = _run_git(repo_dir, "remote", "add", "origin", remote_url)
-
-
-def _ensure_branch_master(repo_dir: Path) -> None:
-    res = _run_git(repo_dir, "symbolic-ref", "-q", "HEAD")
-    headref = (res.stdout or "").strip() if res.returncode == 0 else ""
-    if not headref:
-        _run_git(repo_dir, "symbolic-ref", "HEAD", "refs/heads/master")
-        return
-    if headref.endswith("/master"):
-        return
-    _run_git(repo_dir, "branch", "-M", "master")
 
 
 def _slug(s: str) -> str:
     s = re.sub(r"[\s]+", "-", s.strip())
     s = re.sub(r"[^a-zA-Z0-9._-]", "-", s)
     return re.sub(r"-+", "-", s).strip("-_")
-
-
-def _build_slug_map_from_sessions() -> Dict[str, Dict[str, str]]:
-    engine = ConceptEngine()
-    entries = engine._load_all_sessions()
-    best: Dict[str, Dict[str, str]] = {}
-    best_ts: Dict[str, int] = {}
-    for e in entries:
-        title = (e.get("title") or "").strip()
-        if not title:
-            continue
-        slug = _slug(title)
-        ts = 0
-        try:
-            ts = int(e.get("saved_at") or 0)
-        except Exception:
-            ts = 0
-        if slug not in best or ts >= best_ts.get(slug, 0):
-            best[slug] = {"title": title, "description": (e.get("description") or "").strip()}
-            best_ts[slug] = ts
-    return best
-
-
-def _write_concepts_index(repo_dir: Path) -> None:
-    try:
-        slug_map = _build_slug_map_from_sessions()
-        items = []
-        seen: Set[str] = set()
-        for child in sorted(repo_dir.iterdir(), key=lambda p: p.name.lower()):
-            if not child.is_dir():
-                continue
-            name = child.name
-            if name.startswith(".") or name in {".git", "node_modules"}:
-                continue
-            slug = name
-            if slug in seen:
-                continue
-            seen.add(slug)
-            title = slug_map.get(slug, {}).get("title") or re.sub(r"[-_]+", " ", slug).strip().title()
-            desc = slug_map.get(slug, {}).get("description") or ""
-            items.append((slug, title, desc))
-
-        intro = (
-            "This folder contains a library of project concepts created with the Idea -> Concept tool. "
-            "Each entry links to its folder with the original concept README and related assets."
-        )
-        lines: List[str] = []
-        lines.append("# Concepts Index")
-        lines.append("")
-        lines.append(intro)
-        lines.append("")
-        for slug, title, desc in items:
-            if desc:
-                lines.append(f"- [{title}](./{slug}/) - {desc}")
-            else:
-                lines.append(f"- [{title}](./{slug}/)")
-        (repo_dir / "README.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    except Exception:
-        pass
 
 
 def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Optional[Path]]:
