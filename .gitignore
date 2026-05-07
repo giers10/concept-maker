@@ -16,3 +16,4 @@ Cargo.lock
 *.dylib
 out
 build
+*.tmp
