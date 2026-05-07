@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -95,6 +96,8 @@ export default function App() {
 
   const [priorModalOpen, setPriorModalOpen] = useState(false);
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const menuActionRef = useRef<(action: string) => void>(() => undefined);
 
   const rows = useMemo<RowEntry[]>(() => [...files, ...websites], [files, websites]);
   const markdownPreviewHtml = useMemo(
@@ -642,14 +645,50 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    menuActionRef.current = (action: string) => {
+      switch (action) {
+        case "file-new":
+          onNewSession();
+          break;
+        case "file-open":
+          void onOpenSession();
+          break;
+        case "file-save":
+          void onSaveSession();
+          break;
+        case "settings-open":
+          setSettingsModalOpen(true);
+          break;
+      }
+    };
+  });
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+
+    listen<string>("app-menu-action", (event) => {
+      menuActionRef.current(event.payload);
+    })
+      .then((cleanup) => {
+        if (disposed) {
+          cleanup();
+        } else {
+          unlisten = cleanup;
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      disposed = true;
+      if (unlisten) unlisten();
+    };
+  }, []);
+
   return (
     <div className="app">
       <div className="top-bar">
-        <div className="top-actions">
-          <button className="ghost" onClick={onNewSession}>New</button>
-          <button className="ghost" onClick={onOpenSession}>Open</button>
-          <button className="ghost" onClick={onSaveSession}>Save</button>
-        </div>
         <div className="status-pill">{status}</div>
       </div>
 
@@ -800,32 +839,6 @@ export default function App() {
         </div>
       </div>
 
-      <div className="bottom-bar">
-        <div className="input-group">
-          <label>Ollama host</label>
-          <input value={ollamaHost} onChange={(e) => setOllamaHost(e.target.value)} />
-        </div>
-        <div className="input-group">
-          <label>Model</label>
-          <select value={ollamaModel} onChange={(e) => setOllamaModel(e.target.value)}>
-            <option value="Select model...">Select model...</option>
-            {models.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="input-group">
-          <label>Remote repo</label>
-          <input value={gitRemote} onChange={(e) => setGitRemote(e.target.value)} placeholder="https://..." />
-        </div>
-        <div className="input-group">
-          <label>SearXNG URL</label>
-          <input value={searxUrl} onChange={(e) => setSearxUrl(e.target.value)} />
-        </div>
-      </div>
-
       {sessionModalOpen && (
         <div
           style={{
@@ -867,6 +880,70 @@ export default function App() {
             </div>
             <div style={{ marginTop: "16px", textAlign: "right" }}>
               <button onClick={() => setSessionModalOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settingsModalOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSettingsModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="settings-window"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+          >
+            <div className="settings-header">
+              <h3 id="settings-title">Settings</h3>
+              <button className="ghost" onClick={() => setSettingsModalOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            <div className="settings-grid">
+              <label htmlFor="settings-ollama-host">Ollama host</label>
+              <input
+                id="settings-ollama-host"
+                value={ollamaHost}
+                onChange={(e) => setOllamaHost(e.target.value)}
+              />
+
+              <label htmlFor="settings-model">Model</label>
+              <select
+                id="settings-model"
+                value={ollamaModel}
+                onChange={(e) => setOllamaModel(e.target.value)}
+              >
+                <option value="Select model...">Select model...</option>
+                {models.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="settings-remote-repo">Remote repo</label>
+              <input
+                id="settings-remote-repo"
+                value={gitRemote}
+                onChange={(e) => setGitRemote(e.target.value)}
+                placeholder="https://..."
+              />
+
+              <label htmlFor="settings-searx-url">SearXNG URL</label>
+              <input
+                id="settings-searx-url"
+                value={searxUrl}
+                onChange={(e) => setSearxUrl(e.target.value)}
+              />
             </div>
           </div>
         </div>
