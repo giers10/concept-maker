@@ -828,46 +828,41 @@ export default function App() {
 
       {sessionModalOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(69, 10, 10, 0.28)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 10,
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSessionModalOpen(false);
+            }
           }}
         >
           <div
-            style={{
-              background: "var(--panel)",
-              border: "1px solid var(--line)",
-              padding: "20px",
-              borderRadius: "6px",
-              width: "min(560px, 90vw)",
-              maxHeight: "80vh",
-              overflow: "auto",
-              boxShadow: "var(--dialog-shadow)",
-            }}
+            className="settings-window session-window"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="session-title"
           >
-            <h3 style={{ marginTop: 0 }}>Open Session</h3>
+            <div className="settings-header">
+              <h3 id="session-title">Open Session</h3>
+              <button className="ghost" onClick={() => setSessionModalOpen(false)}>
+                Close
+              </button>
+            </div>
             {sessionsLoading && <p>Loading sessions...</p>}
             {!sessionsLoading && sessions.length === 0 && <p>No saved sessions yet.</p>}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {!sessionsLoading && sessions.map((s) => (
-                <button
-                  key={s.title}
-                  className="ghost"
-                  style={{ textAlign: "left", borderRadius: "4px" }}
-                  onClick={() => applySession(s.title)}
-                >
-                  <strong>{s.title}</strong>
-                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>{s.description}</div>
-                  <div style={{ fontSize: "11px", color: "var(--subtle)" }}>{formatTime(s.saved_at)}</div>
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: "16px", textAlign: "right" }}>
-              <button onClick={() => setSessionModalOpen(false)}>Close</button>
+            <div className="session-list">
+              {!sessionsLoading &&
+                sessions.map((s) => (
+                  <button
+                    key={s.title}
+                    className="ghost session-item"
+                    onClick={() => applySession(s.title)}
+                  >
+                    <strong>{s.title}</strong>
+                    <div className="session-description">{s.description}</div>
+                    <div className="session-time">{formatTime(s.saved_at)}</div>
+                  </button>
+                ))}
             </div>
           </div>
         </div>
