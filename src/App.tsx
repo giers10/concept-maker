@@ -14,7 +14,6 @@ type FileEntry = {
   name: string;
   type: string;
   size: string;
-  include: boolean;
 };
 
 type UrlEntry = {
@@ -23,7 +22,6 @@ type UrlEntry = {
   name: string;
   type: "url";
   size: string;
-  include: boolean;
 };
 
 type RowEntry = FileEntry | UrlEntry;
@@ -187,13 +185,6 @@ export default function App() {
     };
   }, [files]);
 
-  const includeMap = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    files.forEach((f) => (map[f.path] = f.include));
-    websites.forEach((w) => (map[w.url] = w.include));
-    return map;
-  }, [files, websites]);
-
   const addFilesByPath = async (paths: string[], expandDirs: boolean) => {
     if (!paths.length) return;
     setStatus("Indexing files...");
@@ -212,7 +203,6 @@ export default function App() {
               name: item.name,
               type: item.type,
               size: item.size,
-              include: true,
             });
           }
         });
@@ -258,7 +248,6 @@ export default function App() {
           name,
           type: "url",
           size: "web",
-          include: true,
         },
       ];
     });
@@ -288,18 +277,6 @@ export default function App() {
       }
       return next;
     });
-  };
-
-  const toggleInclude = (row: RowEntry) => {
-    if (row.kind === "file") {
-      setFiles((prev) =>
-        prev.map((f) => (f.path === row.path ? { ...f, include: !f.include } : f))
-      );
-    } else {
-      setWebsites((prev) =>
-        prev.map((w) => (w.url === row.url ? { ...w, include: !w.include } : w))
-      );
-    }
   };
 
   const onRephrase = async () => {
