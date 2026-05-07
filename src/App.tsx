@@ -91,6 +91,7 @@ export default function App() {
 
   const [sessionModalOpen, setSessionModalOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const [priorModalOpen, setPriorModalOpen] = useState(false);
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
@@ -539,13 +540,18 @@ export default function App() {
   };
 
   const onOpenSession = async () => {
+    setSessionModalOpen(true);
+    setSessionsLoading(true);
+    setSessions([]);
     try {
       const list = await runBackend<SessionSummary[]>("list_sessions", {});
       setSessions(list.sort((a, b) => (b.saved_at || 0) - (a.saved_at || 0)));
-      setSessionModalOpen(true);
     } catch (err) {
       console.error(err);
+      setSessionModalOpen(false);
       window.alert("Failed to load sessions.");
+    } finally {
+      setSessionsLoading(false);
     }
   };
 
@@ -844,9 +850,10 @@ export default function App() {
             }}
           >
             <h3 style={{ marginTop: 0 }}>Open Session</h3>
-            {sessions.length === 0 && <p>No saved sessions yet.</p>}
+            {sessionsLoading && <p>Loading sessions...</p>}
+            {!sessionsLoading && sessions.length === 0 && <p>No saved sessions yet.</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {sessions.map((s) => (
+              {!sessionsLoading && sessions.map((s) => (
                 <button
                   key={s.title}
                   className="ghost"
