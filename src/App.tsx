@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { markdownToHTML } from "./markdown/markdown";
+import "./markdown/markdown-render.css";
 
 const IMAGE_PROMPT_PLACEHOLDER = "Generated image prompt will appear here.";
 
@@ -77,6 +79,7 @@ export default function App() {
   const [rephraseVariants, setRephraseVariants] = useState<RephraseVariant[]>([]);
   const [rephraseSelected, setRephraseSelected] = useState<string | null>(null);
   const [concept, setConcept] = useState("");
+  const [markdownPreview, setMarkdownPreview] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imagePrompt, setImagePrompt] = useState(IMAGE_PROMPT_PLACEHOLDER);
@@ -94,6 +97,10 @@ export default function App() {
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
 
   const rows = useMemo<RowEntry[]>(() => [...files, ...websites], [files, websites]);
+  const markdownPreviewHtml = useMemo(
+    () => (markdownPreview ? markdownToHTML(concept) : ""),
+    [concept, markdownPreview]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -745,21 +752,40 @@ export default function App() {
         <div className="column">
           <section className="panel" style={{ flex: 1 }}>
             <div className="panel-title">
-              <h2>Concept (Editable)</h2>
-              <span>Refine and publish</span>
+              <h2>{markdownPreview ? "Concept (Preview)" : "Concept (Editable)"}</h2>
+              <span>{markdownPreview ? "Rendered Markdown" : "Refine and publish"}</span>
             </div>
-            <div className="concept-meta">
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
-              <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-            </div>
-            <textarea
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              placeholder="Generated concept markdown appears here..."
-              style={{ flex: 1, minHeight: 240 }}
-            />
+            {markdownPreview ? (
+              <div
+                className="markdown-preview md-root"
+                role="textbox"
+                aria-readonly="true"
+                tabIndex={0}
+                dangerouslySetInnerHTML={{
+                  __html:
+                    markdownPreviewHtml ||
+                    '<p class="md-paragraph markdown-preview__empty">No concept markdown to preview.</p>',
+                }}
+              />
+            ) : (
+              <>
+                <div className="concept-meta">
+                  <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+                  <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+                </div>
+                <textarea
+                  className="concept-editor"
+                  value={concept}
+                  onChange={(e) => setConcept(e.target.value)}
+                  placeholder="Generated concept markdown appears here..."
+                />
+              </>
+            )}
             <div className="controls">
               <button onClick={onPreview} disabled={busy.preview}>Preview PDF</button>
+              <button onClick={() => setMarkdownPreview((value) => !value)}>
+                {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
+              </button>
               <button className="primary" onClick={onPush} disabled={busy.push}>Push to Repo</button>
               <button onClick={onGenerateImagePrompt} disabled={busy.imagePrompt}>Generate image prompt</button>
               <button onClick={onGenerateImage} disabled={busy.imageGen}>Generate Image</button>
