@@ -407,6 +407,35 @@ select {
   width: min(460px, 92vw);
 }
 
+.session-window {
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.session-description {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.session-time {
+  margin-top: 2px;
+  color: var(--subtle);
+  font-size: 11px;
+}
+
 .website-form {
   display: grid;
   gap: 10px;
