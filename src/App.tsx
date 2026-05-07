@@ -94,6 +94,9 @@ export default function App() {
 
   const [priorModalOpen, setPriorModalOpen] = useState(false);
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
+  const [websiteModalOpen, setWebsiteModalOpen] = useState(false);
+  const [websiteInput, setWebsiteInput] = useState("");
+  const [websiteError, setWebsiteError] = useState("");
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const menuActionRef = useRef<(action: string) => void>(() => undefined);
 
@@ -222,26 +225,44 @@ export default function App() {
   };
 
   const onAddWebsite = () => {
-    const url = window.prompt("Enter a URL (starting with http:// or https://):");
-    if (!url) return;
-    const trimmed = url.trim();
+    setWebsiteInput("");
+    setWebsiteError("");
+    setWebsiteModalOpen(true);
+  };
+
+  const onSubmitWebsite = () => {
+    const trimmed = websiteInput.trim();
     if (!/^https?:\/\//i.test(trimmed)) {
-      window.alert("Please enter a valid http(s) URL.");
+      setWebsiteError("Enter a valid http(s) URL.");
       return;
     }
-    setWebsites((prev) => {
-      if (prev.some((w) => w.url === trimmed)) return prev;
-      const name = trimmed.replace(/^https?:\/\//, "").slice(0, 60);
-      return [
-        ...prev,
-        {
-          kind: "url",
-          url: trimmed,
-          name,
-          type: "url",
-          size: "web",
-        },
-      ];
+    if (websites.some((w) => w.url === trimmed)) {
+      setWebsiteError("This website is already in the table.");
+      return;
+    }
+
+    const name = trimmed.replace(/^https?:\/\//, "").slice(0, 60);
+    setWebsites((prev) => [
+      ...prev,
+      {
+        kind: "url",
+        url: trimmed,
+        name,
+        type: "url",
+        size: "web",
+      },
+    ]);
+    setWebsiteModalOpen(false);
+    setWebsiteInput("");
+    setWebsiteError("");
+    setStatus(`Added ${name}`);
+  };
+
+  const closeWebsiteModal = () => {
+    setWebsiteModalOpen(false);
+    setWebsiteInput("");
+    setWebsiteError("");
+  };
     });
   };
 
