@@ -95,7 +95,6 @@ export default function App() {
   const [priorModalOpen, setPriorModalOpen] = useState(false);
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const menuActionRef = useRef<(action: string) => void>(() => undefined);
 
   const rows = useMemo<RowEntry[]>(() => [...files, ...websites], [files, websites]);
@@ -220,18 +219,6 @@ export default function App() {
     if (!selection) return;
     const paths = Array.isArray(selection) ? selection : [selection];
     await addFilesByPath(paths as string[], false);
-  };
-
-  const onAddFolder = async () => {
-    const selection = await open({ directory: true, title: "Select folder" });
-    if (!selection) return;
-    const paths = Array.isArray(selection) ? selection : [selection];
-    await addFilesByPath(paths as string[], true);
-  };
-
-  const chooseSourcePicker = (mode: "files" | "folder") => {
-    setSourcePickerOpen(false);
-    void (mode === "files" ? onAddFiles() : onAddFolder());
   };
 
   const onAddWebsite = () => {
@@ -709,7 +696,7 @@ export default function App() {
               </div>
             </div>
             <div className="controls">
-              <button onClick={() => setSourcePickerOpen(true)}>Add Files / Folder</button>
+              <button onClick={onAddFiles}>Add Files</button>
               <button onClick={onAddWebsite}>Add Website</button>
             </div>
           </section>
@@ -764,36 +751,6 @@ export default function App() {
           </section>
         </div>
       </div>
-
-      {sourcePickerOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSourcePickerOpen(false);
-            }
-          }}
-        >
-          <div
-            className="settings-window source-picker-window"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="source-picker-title"
-          >
-            <div className="settings-header">
-              <h3 id="source-picker-title">Add Source</h3>
-              <button className="ghost" onClick={() => setSourcePickerOpen(false)}>
-                Close
-              </button>
-            </div>
-            <div className="source-picker-actions">
-              <button onClick={() => chooseSourcePicker("files")}>Files</button>
-              <button onClick={() => chooseSourcePicker("folder")}>Folder</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {sessionModalOpen && (
         <div
