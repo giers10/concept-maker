@@ -234,14 +234,12 @@ button.primary:hover {
   border-color: var(--accent-strong);
 }
 
-button.secondary,
 button.ghost {
   background: transparent;
   color: var(--accent);
   border-color: var(--field-border);
 }
 
-button.secondary:hover,
 button.ghost:hover {
   background: var(--bg-main);
   color: var(--accent-strong);
