@@ -484,7 +484,6 @@ export default function App() {
     }
     setFiles([]);
     setWebsites([]);
-    setSelectedRows(new Set());
     setNotes("");
     setRephraseVariants([]);
     setRephraseSelected(null);
