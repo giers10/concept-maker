@@ -519,50 +519,6 @@ export default function App() {
     }
   };
 
-  const onPush = async () => {
-    if (!title.trim() || !description.trim()) {
-      window.alert("Title and Description are required.");
-      return;
-    }
-    if (!concept.trim()) {
-      window.alert("Generate or paste concept text first.");
-      return;
-    }
-    const repoDir = await open({ directory: true, title: "Select concepts repo folder" });
-    if (!repoDir) return;
-    const repoPath = Array.isArray(repoDir) ? repoDir[0] : repoDir;
-    setBusy((prev) => ({ ...prev, push: true }));
-    setStatus("Pushing to repo...");
-    try {
-      const result = await runBackend<{
-        repo_dir: string;
-        concept_dir: string;
-        pdf_ok: boolean;
-        pdf_log: string;
-        pushed: boolean;
-      }>("push_repo", {
-        title,
-        description,
-        concept,
-        files: files.map((f) => f.path),
-        include_map: includeMap,
-        git_remote_url: gitRemote,
-        repo_dir: repoPath,
-      });
-      if (!result.pdf_ok) {
-        window.alert(`PDF export failed. Log: ${result.pdf_log}`);
-      }
-      setStatus(result.pushed ? "Pushed to remote" : "Committed locally");
-      window.alert(`Concept saved to:\n${result.concept_dir}`);
-    } catch (err) {
-      setStatus("Push failed");
-      console.error(err);
-      window.alert("Push failed. Check console for details.");
-    } finally {
-      setBusy((prev) => ({ ...prev, push: false }));
-    }
-  };
-
   const onNewSession = () => {
     if (notes || concept || files.length || websites.length) {
       const ok = window.confirm("Clear the current session?");
