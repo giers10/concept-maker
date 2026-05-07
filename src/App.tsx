@@ -95,6 +95,7 @@ export default function App() {
   const [priorModalOpen, setPriorModalOpen] = useState(false);
   const [priorData, setPriorData] = useState<PriorArtResponse | null>(null);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const menuActionRef = useRef<(action: string) => void>(() => undefined);
 
   const rows = useMemo<RowEntry[]>(() => [...files, ...websites], [files, websites]);
