@@ -1451,7 +1451,6 @@ def generate_concept(payload: Dict[str, Any]) -> Dict[str, Any]:
     notes = (payload.get("notes") or "").strip()
     files = payload.get("files") or []
     websites = payload.get("websites") or []
-    include_map = payload.get("include_map") or {}
     host = payload.get("ollama_host") or "http://localhost:11434"
     model = payload.get("model") or ""
 
@@ -1460,14 +1459,12 @@ def generate_concept(payload: Dict[str, Any]) -> Dict[str, Any]:
     kb = build_kb_string(records)
 
     assets_lines: List[str] = []
-    assets_files = [p for p in files if include_map.get(str(p), True)]
-    assets_urls = [u for u in websites if include_map.get(str(u), True)]
-    if assets_files:
+    if files:
         assets_lines.append("Files:")
-        assets_lines.extend(f"- {Path(p).name}" for p in assets_files)
-    if assets_urls:
+        assets_lines.extend(f"- {Path(p).name}" for p in files)
+    if websites:
         assets_lines.append("URLs:")
-        assets_lines.extend(f"- {u}" for u in assets_urls)
+        assets_lines.extend(f"- {u}" for u in websites)
     assets_str = "\n".join(assets_lines) or "(none)"
 
     prompt = (
@@ -1509,7 +1506,6 @@ def prior_art(payload: Dict[str, Any]) -> Dict[str, Any]:
     notes = (payload.get("notes") or "").strip()
     files = payload.get("files") or []
     websites = payload.get("websites") or []
-    include_map = payload.get("include_map") or {}
     host = payload.get("ollama_host") or "http://localhost:11434"
     model = payload.get("model") or ""
     searx_url = payload.get("searx_url") or None
@@ -1517,14 +1513,13 @@ def prior_art(payload: Dict[str, Any]) -> Dict[str, Any]:
     engine = ConceptEngine()
     records = engine.build_kb_records(files, websites)
     kb = build_kb_string(records)
-    assets = [p for p in files if include_map.get(str(p), True)]
 
     return websearch.prior_art_search(
         ollama_host=host,
         model=model,
         notes=notes,
         kb=kb,
-        assets=assets,
+        assets=files,
         searx_url=searx_url,
     )
 
@@ -1533,7 +1528,6 @@ def preview_pdf(payload: Dict[str, Any]) -> Dict[str, Any]:
     concept_text = (payload.get("concept") or "").strip()
     title = (payload.get("title") or "").strip()
     files = payload.get("files") or []
-    include_map = payload.get("include_map") or {}
     if not concept_text:
         raise RuntimeError("Concept text is empty")
 
@@ -1549,7 +1543,7 @@ def preview_pdf(payload: Dict[str, Any]) -> Dict[str, Any]:
     md_path = base / "README.md"
     md_path.write_text(concept_text, encoding="utf-8")
 
-    assets = [Path(p) for p in files if include_map.get(str(p), True)]
+    assets = [Path(p) for p in files]
     for src in assets:
         try:
             dst = base / src.name
