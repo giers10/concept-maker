@@ -1,4 +1,4 @@
-# Core libraries used by the GUI (concept_gui.py) and corpus builder
+# Core libraries used by the Tauri Python backend and corpus builder
 pymupdf
 beautifulsoup4
 requests
@@ -8,7 +8,6 @@ numpy
 tqdm
 ebooklib
 markdown
-tkinterdnd2
 pdflatex
 
 # Optional: language detection and image text-likeness improvements

@@ -4,7 +4,7 @@
 """
 Headless backend actions for the Concept Maker app.
 
-This module avoids Tk dependencies and exposes JSON actions for the Tauri UI.
+This module exposes JSON actions for the Tauri UI without desktop GUI imports.
 """
 
 from __future__ import annotations

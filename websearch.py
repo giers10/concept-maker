@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Prior-art web search utilities for the Idea → Concept GUI.
+Prior-art web search utilities for the Concept Maker backend.
 
 Design goals
 - Pure stdlib networking (urllib) to avoid new dependencies.
 - Works with a local SearXNG instance.
 - Uses Ollama for both query generation and embeddings.
-- Small, robust, and callable from the GUI with status callbacks.
+- Small, robust, and callable from the Python backend.
 """
 
 from __future__ import annotations
