@@ -132,7 +132,7 @@ body {
 .table-header,
 .table-row {
   display: grid;
-  grid-template-columns: 1.2fr 2fr 0.6fr 0.6fr 0.7fr;
+  grid-template-columns: 1.2fr 2fr 0.6fr 0.6fr;
   align-items: center;
   padding: 10px 12px;
   gap: 8px;
@@ -170,24 +170,6 @@ body {
 
 .table-row.selected {
   background: var(--line);
-}
-
-.checkbox {
-  width: 18px;
-  height: 18px;
-  border-radius: var(--control-radius);
-  border: 1px solid var(--accent);
-  display: grid;
-  place-items: center;
-  background: var(--surface);
-  color: var(--accent);
-}
-
-.checkbox.checked {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-  font-weight: 700;
 }
 
 .controls {
@@ -288,7 +270,6 @@ select:focus {
   border-color: var(--accent);
 }
 
-input[type="checkbox"],
 select {
   accent-color: var(--accent);
 }
@@ -427,7 +408,7 @@ select {
 @media (max-width: 720px) {
   .table-header,
   .table-row {
-    grid-template-columns: 1.2fr 1.8fr 0.6fr 0.6fr 0.6fr;
+    grid-template-columns: 1.2fr 1.8fr 0.6fr 0.6fr;
   }
 
   .settings-grid {
