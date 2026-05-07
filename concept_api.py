@@ -1568,73 +1568,6 @@ def preview_pdf(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def push_repo(payload: Dict[str, Any]) -> Dict[str, Any]:
-    title = (payload.get("title") or "").strip()
-    desc = (payload.get("description") or "").strip()
-    concept_text = (payload.get("concept") or "").strip()
-    files = payload.get("files") or []
-    include_map = payload.get("include_map") or {}
-    remote = (payload.get("git_remote_url") or "").strip()
-    repo_dir = Path(payload.get("repo_dir") or CONCEPTS_DIR)
-
-    if not title or not desc:
-        raise RuntimeError("Title and Description are required")
-    if not concept_text:
-        raise RuntimeError("Concept text is empty")
-
-    _ensure_repo_initialized(repo_dir)
-    slug = _slug(title)
-    concept_dir = repo_dir / slug
-    concept_dir.mkdir(parents=True, exist_ok=True)
-    md_path = concept_dir / "README.md"
-    md_path.write_text(concept_text, encoding="utf-8")
-
-    assets = [Path(p) for p in files if include_map.get(str(p), True)]
-    for src in assets:
-        try:
-            dst = concept_dir / src.name
-            if dst.name.lower() in {"readme.md", f"{slug}-concept.pdf".lower()}:
-                dst = concept_dir / f"asset-{src.name}"
-            shutil.copy2(src, dst)
-        except Exception:
-            pass
-
-    pdf_path = concept_dir / f"{slug}-concept.pdf"
-    ok_pdf, log_path = _convert_markdown_to_pdf(md_path, pdf_path)
-
-    try:
-        _write_concepts_index(repo_dir)
-    except Exception:
-        pass
-
-    add_res = _run_git(repo_dir, "add", ".")
-    if add_res.returncode != 0:
-        raise RuntimeError(add_res.stdout)
-    commit_msg = f"{title} - {desc}"
-    commit_res = _run_git(repo_dir, "commit", "-m", commit_msg)
-    if commit_res.returncode != 0:
-        if "nothing to commit" not in (commit_res.stdout or "").lower():
-            raise RuntimeError(commit_res.stdout)
-
-    _ensure_branch_master(repo_dir)
-    pushed = False
-    if remote:
-        _ensure_remote_origin(repo_dir, remote)
-        push_res = _run_git(repo_dir, "push", "-u", "origin", "master")
-        if push_res.returncode != 0:
-            raise RuntimeError(push_res.stdout)
-        pushed = True
-
-    return {
-        "repo_dir": str(repo_dir),
-        "concept_dir": str(concept_dir),
-        "pdf_path": str(pdf_path),
-        "pdf_ok": ok_pdf,
-        "pdf_log": str(log_path) if log_path else "",
-        "pushed": pushed,
-    }
-
-
 # -----------------------------
 # JSON-RPC style entrypoint
 # -----------------------------
@@ -1671,8 +1604,6 @@ def main() -> int:
             result = prior_art(payload)
         elif action == "preview_pdf":
             result = preview_pdf(payload)
-        elif action == "push_repo":
-            result = push_repo(payload)
         elif action == "generate_image":
             prompt = payload.get("prompt") or ""
             out_dir = Path(payload.get("output_dir") or "")
