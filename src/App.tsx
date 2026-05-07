@@ -88,7 +88,6 @@ export default function App() {
   const [imagePrompt, setImagePrompt] = useState(IMAGE_PROMPT_PLACEHOLDER);
   const [ollamaHost, setOllamaHost] = useState("http://localhost:11434");
   const [ollamaModel, setOllamaModel] = useState("Select model...");
-  const [gitRemote, setGitRemote] = useState("");
   const [searxUrl, setSearxUrl] = useState("http://localhost:8888");
   const [models, setModels] = useState<string[]>([]);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -134,7 +133,6 @@ export default function App() {
         if (!mounted) return;
         if (settings.ollama_host) setOllamaHost(settings.ollama_host);
         if (settings.ollama_model) setOllamaModel(settings.ollama_model);
-        if (settings.git_remote_url) setGitRemote(settings.git_remote_url);
         if (settings.searx_url) setSearxUrl(settings.searx_url);
       } catch {
         // ignore
@@ -159,13 +157,12 @@ export default function App() {
         settings: {
           ollama_host: ollamaHost,
           ollama_model: ollamaModel,
-          git_remote_url: gitRemote,
           searx_url: searxUrl,
         },
       }).catch(() => undefined);
     }, 400);
     return () => clearTimeout(timer);
-  }, [ollamaHost, ollamaModel, gitRemote, searxUrl]);
+  }, [ollamaHost, ollamaModel, searxUrl]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
