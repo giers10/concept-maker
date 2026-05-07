@@ -229,6 +229,11 @@ export default function App() {
     await addFilesByPath(paths as string[], true);
   };
 
+  const chooseSourcePicker = (mode: "files" | "folder") => {
+    setSourcePickerOpen(false);
+    void (mode === "files" ? onAddFiles() : onAddFolder());
+  };
+
   const onAddWebsite = () => {
     const url = window.prompt("Enter a URL (starting with http:// or https://):");
     if (!url) return;
