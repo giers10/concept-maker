@@ -657,8 +657,8 @@ export default function App() {
             <div className="controls">
               <button onClick={onRephrase} disabled={busy.rephrase}>Rephrase</button>
               <button onClick={onExtend} disabled={busy.extend}>Extend</button>
+              <button onClick={onPriorArt} disabled={busy.prior}>Find Prior Art</button>
               <button className="primary" onClick={onGenerateConcept} disabled={busy.generate}>Generate Concept</button>
-              <button className="secondary" onClick={onPriorArt} disabled={busy.prior}>Find Prior Art</button>
             </div>
           </section>
 
