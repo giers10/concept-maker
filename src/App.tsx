@@ -709,8 +709,7 @@ export default function App() {
               </div>
             </div>
             <div className="controls">
-              <button onClick={onAddFiles}>Add Files</button>
-              <button onClick={onAddFolder}>Add Folder</button>
+              <button onClick={() => setSourcePickerOpen(true)}>Add Files / Folder</button>
               <button onClick={onAddWebsite}>Add Website</button>
             </div>
           </section>
