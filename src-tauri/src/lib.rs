@@ -2,6 +2,10 @@ use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use tauri::{
+  menu::{Menu, MenuItem, Submenu},
+  Emitter,
+};
 
 fn repo_root() -> PathBuf {
   let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -107,6 +111,29 @@ fn open_path(path: String) -> Result<(), String> {
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
+    .menu(|handle| {
+      let new_item = MenuItem::with_id(handle, "file-new", "New", true, None::<&str>)?;
+      let open_item = MenuItem::with_id(handle, "file-open", "Open", true, None::<&str>)?;
+      let save_item = MenuItem::with_id(handle, "file-save", "Save", true, None::<&str>)?;
+      let file_menu = Submenu::with_items(
+        handle,
+        "File",
+        true,
+        &[&new_item, &open_item, &save_item],
+      )?;
+
+      let open_settings =
+        MenuItem::with_id(handle, "settings-open", "Open Settings", true, None::<&str>)?;
+      let settings_menu = Submenu::with_items(handle, "Settings", true, &[&open_settings])?;
+
+      Menu::with_items(handle, &[&file_menu, &settings_menu])
+    })
+    .on_menu_event(|app, event| match event.id().as_ref() {
+      "file-new" | "file-open" | "file-save" | "settings-open" => {
+        let _ = app.emit("app-menu-action", event.id().as_ref());
+      }
+      _ => {}
+    })
     .invoke_handler(tauri::generate_handler![run_python_action, open_path])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
