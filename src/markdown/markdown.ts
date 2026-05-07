@@ -29,6 +29,7 @@ const alignmentClassFromToken = (token: any) => {
 const safeLink = (hrefRaw: string) => {
   const href = (hrefRaw || "").trim();
   if (!href) return "";
+  if (href.startsWith("//")) return "";
   if (/^(https?|mailto|tel):/i.test(href)) return href;
   if (/^[./#]/.test(href)) return href;
   if (!/^[a-z][a-z0-9+.-]*:/i.test(href)) return href;
@@ -255,11 +256,11 @@ markdown.renderer.rules.code_inline = (tokens: any[], idx: number) =>
 
 markdown.renderer.rules.fence = (tokens: any[], idx: number) => {
   const info = tokens[idx].info.trim();
-  const language = info || "code";
-  return `<pre class="md-codeblock"><code>${escapeHtml(tokens[idx].content).replace(
+  const languageClass = info.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "code";
+  return `<pre class="md-codeblock"><code class="language-${languageClass}">${escapeHtml(tokens[idx].content).replace(
     /\n$/,
     ""
-  )}</code></pre><div class="md-codeblock__label">${escapeHtml(language)}</div>`;
+  )}</code></pre>`;
 };
 
 markdown.renderer.rules.code_block = (tokens: any[], idx: number) =>

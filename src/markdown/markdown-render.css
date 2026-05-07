@@ -141,13 +141,6 @@
   overflow-wrap: anywhere;
 }
 
-.md-codeblock__label {
-  margin: 0 0 1rem;
-  font-family: var(--md-code-font);
-  font-size: 11px;
-  color: var(--subtle);
-}
-
 .md-inline-code {
   padding: 0.1em 0.24em;
   border-radius: 4px;
