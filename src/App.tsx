@@ -619,7 +619,50 @@ export default function App() {
     <div className="app">
       <div className="panes">
         <div className="column">
-          <section className="panel">
+          <section className="panel notes-panel">
+            <div className="panel-title">
+              <h2>Notes / Thoughts</h2>
+              <span>Scratchpad for raw ideas</span>
+            </div>
+            <textarea
+              className="notes-area"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Drop in fragments, problem statements, or constraints..."
+            />
+
+            {rephraseVariants.length > 0 && (
+              <div className="rephrase-panel">
+                <strong style={{ fontSize: "12px", color: "var(--accent)" }}>Rephrase variants</strong>
+                <div className="rephrase-list">
+                  {rephraseVariants.map((variant) => (
+                    <div
+                      key={variant.key}
+                      className={`rephrase-item ${rephraseSelected === variant.key ? "active" : ""}`}
+                      onClick={() => {
+                        setRephraseSelected(variant.key);
+                        setNotes(variant.text);
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{variant.label}</div>
+                      <div style={{ fontSize: "11px", color: "var(--subtle)" }}>
+                        {variant.text.slice(0, 120)}{variant.text.length > 120 ? "..." : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="controls">
+              <button onClick={onRephrase} disabled={busy.rephrase}>Rephrase</button>
+              <button onClick={onExtend} disabled={busy.extend}>Extend</button>
+              <button className="primary" onClick={onGenerateConcept} disabled={busy.generate}>Generate Concept</button>
+              <button className="secondary" onClick={onPriorArt} disabled={busy.prior}>Find Prior Art</button>
+            </div>
+          </section>
+
+          <section className="panel files-panel">
             <div className="panel-title">
               <h2>Files & Websites</h2>
               <span>Drag & drop files; add URLs</span>
@@ -663,49 +706,6 @@ export default function App() {
               <button onClick={onAddFiles}>Add Files</button>
               <button onClick={onAddFolder}>Add Folder</button>
               <button onClick={onAddWebsite}>Add Website</button>
-            </div>
-          </section>
-
-          <section className="panel" style={{ flex: 1 }}>
-            <div className="panel-title">
-              <h2>Notes / Thoughts</h2>
-              <span>Scratchpad for raw ideas</span>
-            </div>
-            <textarea
-              className="notes-area"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Drop in fragments, problem statements, or constraints..."
-            />
-
-            {rephraseVariants.length > 0 && (
-              <div className="rephrase-panel">
-                <strong style={{ fontSize: "12px", color: "var(--accent)" }}>Rephrase variants</strong>
-                <div className="rephrase-list">
-                  {rephraseVariants.map((variant) => (
-                    <div
-                      key={variant.key}
-                      className={`rephrase-item ${rephraseSelected === variant.key ? "active" : ""}`}
-                      onClick={() => {
-                        setRephraseSelected(variant.key);
-                        setNotes(variant.text);
-                      }}
-                    >
-                      <div style={{ fontWeight: 600 }}>{variant.label}</div>
-                      <div style={{ fontSize: "11px", color: "var(--subtle)" }}>
-                        {variant.text.slice(0, 120)}{variant.text.length > 120 ? "..." : ""}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="controls">
-              <button onClick={onRephrase} disabled={busy.rephrase}>Rephrase</button>
-              <button onClick={onExtend} disabled={busy.extend}>Extend</button>
-              <button className="primary" onClick={onGenerateConcept} disabled={busy.generate}>Generate Concept</button>
-              <button className="secondary" onClick={onPriorArt} disabled={busy.prior}>Find Prior Art</button>
             </div>
           </section>
         </div>
