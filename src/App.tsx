@@ -75,7 +75,6 @@ export default function App() {
   const [statusVisible, setStatusVisible] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [websites, setWebsites] = useState<UrlEntry[]>([]);
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState("");
   const [rephraseVariants, setRephraseVariants] = useState<RephraseVariant[]>([]);
   const [rephraseSelected, setRephraseSelected] = useState<string | null>(null);
@@ -253,30 +252,15 @@ export default function App() {
     });
   };
 
-  const onRemoveSelected = () => {
-    if (!selectedRows.size) return;
-    setFiles((prev) => prev.filter((f) => !selectedRows.has(rowId(f))));
-    setWebsites((prev) => prev.filter((w) => !selectedRows.has(rowId(w))));
-    setSelectedRows(new Set());
-  };
-
-  const onClearAll = () => {
-    setFiles([]);
-    setWebsites([]);
-    setSelectedRows(new Set());
-  };
-
-  const toggleRowSelection = (row: RowEntry) => {
-    const id = rowId(row);
-    setSelectedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const onRemoveRow = (row: RowEntry) => {
+    const label = row.kind === "file" ? row.path : row.url;
+    if (!window.confirm(`Remove "${row.name}" from Files & Websites?\n\n${label}`)) return;
+    if (row.kind === "file") {
+      setFiles((prev) => prev.filter((file) => file.path !== row.path));
+    } else {
+      setWebsites((prev) => prev.filter((website) => website.url !== row.url));
+    }
+    setStatus(`Removed ${row.name}`);
   };
 
   const onRephrase = async () => {
