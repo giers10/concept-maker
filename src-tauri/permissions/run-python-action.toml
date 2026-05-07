@@ -1,4 +1,4 @@
 [[permission]]
 identifier = "run-python-action"
 description = "Allow the UI to invoke the Python backend"
-commands.allow = ["run_python_action"]
+commands.allow = ["run_python_action", "open_path"]
