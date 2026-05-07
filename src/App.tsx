@@ -664,7 +664,7 @@ export default function App() {
               <div className="table-body">
                 {rows.length === 0 && (
                   <div className="table-row" style={{ gridTemplateColumns: "1fr" }}>
-                    <div style={{ color: "#8b7a6a" }}>Drop files here or use the buttons below.</div>
+                    <div style={{ color: "var(--muted)" }}>Drop files here or use the buttons below.</div>
                   </div>
                 )}
                 {rows.map((row) => (
@@ -712,7 +712,7 @@ export default function App() {
 
             {rephraseVariants.length > 0 && (
               <div className="rephrase-panel">
-                <strong style={{ fontSize: "12px", color: "#5b4c41" }}>Rephrase variants</strong>
+                <strong style={{ fontSize: "12px", color: "var(--accent)" }}>Rephrase variants</strong>
                 <div className="rephrase-list">
                   {rephraseVariants.map((variant) => (
                     <div
@@ -724,7 +724,7 @@ export default function App() {
                       }}
                     >
                       <div style={{ fontWeight: 600 }}>{variant.label}</div>
-                      <div style={{ fontSize: "11px", color: "#6d5f52" }}>
+                      <div style={{ fontSize: "11px", color: "var(--subtle)" }}>
                         {variant.text.slice(0, 120)}{variant.text.length > 120 ? "..." : ""}
                       </div>
                     </div>
@@ -805,7 +805,7 @@ export default function App() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(31, 26, 22, 0.45)",
+            background: "rgba(69, 10, 10, 0.28)",
             display: "grid",
             placeItems: "center",
             zIndex: 10,
@@ -813,13 +813,14 @@ export default function App() {
         >
           <div
             style={{
-              background: "#fffaf3",
+              background: "var(--panel)",
+              border: "1px solid var(--line)",
               padding: "20px",
-              borderRadius: "16px",
+              borderRadius: "6px",
               width: "min(560px, 90vw)",
               maxHeight: "80vh",
               overflow: "auto",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+              boxShadow: "var(--dialog-shadow)",
             }}
           >
             <h3 style={{ marginTop: 0 }}>Open Session</h3>
@@ -829,12 +830,12 @@ export default function App() {
                 <button
                   key={s.title}
                   className="ghost"
-                  style={{ textAlign: "left", borderRadius: "12px" }}
+                  style={{ textAlign: "left", borderRadius: "4px" }}
                   onClick={() => applySession(s.title)}
                 >
                   <strong>{s.title}</strong>
-                  <div style={{ fontSize: "12px", color: "#6d5f52" }}>{s.description}</div>
-                  <div style={{ fontSize: "11px", color: "#8b7a6a" }}>{formatTime(s.saved_at)}</div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>{s.description}</div>
+                  <div style={{ fontSize: "11px", color: "var(--subtle)" }}>{formatTime(s.saved_at)}</div>
                 </button>
               ))}
             </div>
@@ -850,7 +851,7 @@ export default function App() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(31, 26, 22, 0.45)",
+            background: "rgba(69, 10, 10, 0.28)",
             display: "grid",
             placeItems: "center",
             zIndex: 10,
@@ -858,13 +859,14 @@ export default function App() {
         >
           <div
             style={{
-              background: "#fffaf3",
+              background: "var(--panel)",
+              border: "1px solid var(--line)",
               padding: "20px",
-              borderRadius: "16px",
+              borderRadius: "6px",
               width: "min(680px, 92vw)",
               maxHeight: "85vh",
               overflow: "auto",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+              boxShadow: "var(--dialog-shadow)",
             }}
           >
             <h3 style={{ marginTop: 0 }}>Prior Art Results</h3>
@@ -872,7 +874,7 @@ export default function App() {
               <strong>Queries</strong>
               <ul style={{ marginTop: "6px" }}>
                 {priorData.queries.map((q) => (
-                  <li key={q} style={{ fontSize: "12px", color: "#5b4c41" }}>
+                  <li key={q} style={{ fontSize: "12px", color: "var(--ink)" }}>
                     {q}
                   </li>
                 ))}
@@ -881,14 +883,14 @@ export default function App() {
             {priorData.results.length === 0 && <p>No results found.</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {priorData.results.map((r) => (
-                <div key={r.url} style={{ border: "1px solid #eadfce", padding: "12px", borderRadius: "12px" }}>
+                <div key={r.url} style={{ border: "1px solid var(--line)", padding: "12px", borderRadius: "4px", background: "var(--surface)" }}>
                   <div style={{ fontWeight: 600, marginBottom: "4px" }}>{r.title || r.url}</div>
-                  <div style={{ fontSize: "12px", color: "#6d5f52" }}>{r.url}</div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>{r.url}</div>
                   {r.snippet && (
-                    <div style={{ marginTop: "6px", fontSize: "12px", color: "#5b4c41" }}>{r.snippet}</div>
+                    <div style={{ marginTop: "6px", fontSize: "12px", color: "var(--ink)" }}>{r.snippet}</div>
                   )}
                   {typeof r.score === "number" && (
-                    <div style={{ marginTop: "4px", fontSize: "11px", color: "#8b7a6a" }}>Score: {r.score.toFixed(3)}</div>
+                    <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--subtle)" }}>Score: {r.score.toFixed(3)}</div>
                   )}
                 </div>
               ))}
