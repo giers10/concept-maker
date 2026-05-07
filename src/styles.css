@@ -342,6 +342,31 @@ select {
   gap: 8px;
 }
 
+.concept-editor {
+  flex: 1;
+  min-height: 240px;
+}
+
+.markdown-preview {
+  flex: 1;
+  min-height: 314px;
+  padding: 16px 18px;
+  overflow: auto;
+  border: 1px solid var(--field-border);
+  border-radius: var(--control-radius);
+  background: var(--surface);
+  box-shadow: inset 0 1px 2px rgba(159, 18, 57, 0.04);
+}
+
+.markdown-preview:focus {
+  outline: 2px solid rgba(159, 18, 57, 0.2);
+  border-color: var(--accent);
+}
+
+.markdown-preview__empty {
+  color: var(--subtle);
+}
+
 .image-prompt {
   min-height: 110px;
   background: var(--surface);
