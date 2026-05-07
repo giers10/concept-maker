@@ -35,7 +35,6 @@ import websearch
 
 REPO_ROOT = Path(__file__).resolve().parent
 IDEA_HOLE_DIR = REPO_ROOT / ".idea-hole"
-CONCEPTS_DIR = REPO_ROOT / "concepts"
 
 
 # -----------------------------

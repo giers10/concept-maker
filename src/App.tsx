@@ -795,7 +795,6 @@ export default function App() {
               <button onClick={() => setMarkdownPreview((value) => !value)}>
                 {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
               </button>
-              <button className="primary" onClick={onPush} disabled={busy.push}>Push to Repo</button>
               <button onClick={onGenerateImagePrompt} disabled={busy.imagePrompt}>Generate image prompt</button>
               <button onClick={onGenerateImage} disabled={busy.imageGen}>Generate Image</button>
             </div>
@@ -899,14 +898,6 @@ export default function App() {
                   </option>
                 ))}
               </select>
-
-              <label htmlFor="settings-remote-repo">Remote repo</label>
-              <input
-                id="settings-remote-repo"
-                value={gitRemote}
-                onChange={(e) => setGitRemote(e.target.value)}
-                placeholder="https://..."
-              />
 
               <label htmlFor="settings-searx-url">SearXNG URL</label>
               <input
