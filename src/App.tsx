@@ -765,6 +765,36 @@ export default function App() {
         </div>
       </div>
 
+      {sourcePickerOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSourcePickerOpen(false);
+            }
+          }}
+        >
+          <div
+            className="settings-window source-picker-window"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="source-picker-title"
+          >
+            <div className="settings-header">
+              <h3 id="source-picker-title">Add Source</h3>
+              <button className="ghost" onClick={() => setSourcePickerOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="source-picker-actions">
+              <button onClick={() => chooseSourcePicker("files")}>Files</button>
+              <button onClick={() => chooseSourcePicker("folder")}>Folder</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {sessionModalOpen && (
         <div
           style={{
