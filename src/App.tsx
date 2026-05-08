@@ -648,7 +648,10 @@ export default function App() {
           <section className="panel files-panel">
             <div className="panel-title">
               <h2>Files & Websites</h2>
-              <span>Drag & drop files; add URLs</span>
+              <div className="panel-title-actions">
+                <button onClick={onAddFiles}>Add Files</button>
+                <button onClick={onAddWebsite}>Add URL</button>
+              </div>
             </div>
             <div className="table">
               <div className="table-header">
@@ -684,10 +687,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="controls">
-              <button onClick={onAddFiles}>Add Files</button>
-              <button onClick={onAddWebsite}>Add URL</button>
             </div>
           </section>
         </div>
