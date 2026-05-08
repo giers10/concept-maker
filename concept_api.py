@@ -834,10 +834,6 @@ class ConceptEngine:
                 "include": bool(w.get("include", True)),
             })
 
-        img_prompt = (payload.get("image_prompt") or "").strip()
-        if img_prompt == IMAGE_PROMPT_PLACEHOLDER:
-            img_prompt = ""
-
         record = {
             "title": title,
             "description": (payload.get("description") or "").strip(),
@@ -848,7 +844,6 @@ class ConceptEngine:
             "saved_at": int(time.time()),
             "rephrase_variants": payload.get("rephrase_variants") or [],
             "rephrase_selected_key": payload.get("rephrase_selected_key"),
-            "image_prompt": img_prompt,
         }
 
         entries = self._load_all_sessions()
@@ -1282,14 +1277,6 @@ def generate_concept(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def generate_image_prompt(payload: Dict[str, Any]) -> str:
-    idea_text = (payload.get("idea_text") or "").strip()
-    host = payload.get("ollama_host") or "http://localhost:11434"
-    model = payload.get("model") or ""
-    client = OllamaClient(host=host)
-    return generate_image_prompt_for_idea(idea_text, client=client, model=model)
-
-
 def prior_art(payload: Dict[str, Any]) -> Dict[str, Any]:
     notes = (payload.get("notes") or "").strip()
     files = payload.get("files") or []
@@ -1380,8 +1367,6 @@ def main() -> int:
             result = extend(payload.get("note") or "", payload.get("ollama_host") or "http://localhost:11434", payload.get("model") or "")
         elif action == "generate_concept":
             result = generate_concept(payload)
-        elif action == "generate_image_prompt":
-            result = generate_image_prompt(payload)
         elif action == "prior_art":
             result = prior_art(payload)
         elif action == "preview_pdf":
