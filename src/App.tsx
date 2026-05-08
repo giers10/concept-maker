@@ -93,6 +93,10 @@ function fallbackIdeaText(title: string, description: string, concept: string): 
     .join("\n\n");
 }
 
+function currentIdeaText(notes: string, title: string, description: string, concept: string): string {
+  return notes.trim() ? notes : fallbackIdeaText(title, description, concept);
+}
+
 export default function App() {
   const [status, setStatusMessage] = useState("");
   const [statusVersion, setStatusVersion] = useState(0);
@@ -304,15 +308,16 @@ export default function App() {
       window.alert("Please select a model first.");
       return;
     }
-    if (!notes.trim()) {
-      window.alert("Add some notes to rephrase.");
+    const ideaText = currentIdeaText(notes, title, description, concept);
+    if (!ideaText.trim()) {
+      window.alert("Add notes or a concept to rephrase.");
       return;
     }
     setBusy((prev) => ({ ...prev, rephrase: true }));
     setStatus("Rephrasing...");
     try {
       const variants = await runBackend<RephraseVariant[]>("rephrase", {
-        note: notes,
+        note: ideaText,
         ollama_host: ollamaHost,
         model: ollamaModel,
       });
@@ -333,15 +338,16 @@ export default function App() {
       window.alert("Please select a model first.");
       return;
     }
-    if (!notes.trim()) {
-      window.alert("Add some notes to extend.");
+    const ideaText = currentIdeaText(notes, title, description, concept);
+    if (!ideaText.trim()) {
+      window.alert("Add notes or a concept to extend.");
       return;
     }
     setBusy((prev) => ({ ...prev, extend: true }));
     setStatus("Extending...");
     try {
       const extension = await runBackend<string>("extend", {
-        note: notes,
+        note: ideaText,
         ollama_host: ollamaHost,
         model: ollamaModel,
       });
@@ -396,7 +402,7 @@ export default function App() {
       window.alert("Please select a model first.");
       return;
     }
-    const priorArtNotes = notes.trim() ? notes : fallbackIdeaText(title, description, concept);
+    const priorArtNotes = currentIdeaText(notes, title, description, concept);
     setBusy((prev) => ({ ...prev, prior: true }));
     setStatus("Searching prior art...");
     try {
