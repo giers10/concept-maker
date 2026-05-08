@@ -1303,6 +1303,7 @@ def preview_pdf(payload: Dict[str, Any]) -> Dict[str, Any]:
     concept_text = (payload.get("concept") or "").strip()
     title = (payload.get("title") or "").strip()
     files = payload.get("files") or []
+    output_path = (payload.get("output_path") or "").strip()
     if not concept_text:
         raise RuntimeError("Concept text is empty")
 
@@ -1328,7 +1329,15 @@ def preview_pdf(payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
-    pdf_path = base / f"{slug}-preview.pdf"
+    if output_path:
+        pdf_path = Path(output_path).expanduser()
+        if pdf_path.exists() and pdf_path.is_dir():
+            raise RuntimeError(f"Output path is a directory: {pdf_path}")
+        if pdf_path.suffix.lower() != ".pdf":
+            pdf_path = Path(f"{pdf_path}.pdf")
+    else:
+        pdf_path = base / f"{slug}-preview.pdf"
+
     ok, log_path = _convert_markdown_to_pdf(md_path, pdf_path)
     return {
         "ok": ok,
