@@ -910,15 +910,8 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
     logs_dir.mkdir(parents=True, exist_ok=True)
     log_path = logs_dir / f"pdf_export_{concept_dir.name}.log"
 
-    def _resolve(name: str) -> Optional[str]:
-        for base in [None, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"]:
-            p = shutil.which(name) if base is None else os.path.join(base, name)
-            if p and os.path.exists(p):
-                return p
-        return None
-
-    pandoc = _resolve("pandoc")
-    tectonic = _resolve("tectonic")
+    pandoc = resolve_command("pandoc")
+    tectonic = resolve_command("tectonic")
 
     lines: List[str] = []
     lines.append(f"PATH={os.environ.get('PATH','')}")
@@ -987,18 +980,18 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
             except Exception as e_svg_py:
                 lines.append(f"cairosvg unavailable or failed: {e_svg_py}")
             try:
-                tool = shutil.which("rsvg-convert")
+                tool = resolve_command("rsvg-convert")
                 if tool:
-                    res = subprocess.run([tool, "-f", "png", "-o", str(out_path), str(p)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    res = subprocess.run([tool, "-f", "png", "-o", str(out_path), str(p)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=subprocess_env())
                     if res.returncode == 0 and out_path.exists():
                         return out_name
                     lines.append(f"rsvg-convert failed: exit {res.returncode}, {res.stdout}")
             except Exception as e_svg_cli:
                 lines.append(f"rsvg-convert error: {e_svg_cli}")
             try:
-                tool = shutil.which("magick") or shutil.which("convert")
+                tool = resolve_command("magick") or resolve_command("convert")
                 if tool:
-                    res = subprocess.run([tool, str(p), str(out_path)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    res = subprocess.run([tool, str(p), str(out_path)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=subprocess_env())
                     if res.returncode == 0 and out_path.exists():
                         return out_name
                     lines.append(f"imagemagick failed: exit {res.returncode}, {res.stdout}")
@@ -1084,7 +1077,7 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
         str(tmp_md),
         "-f", "markdown+hard_line_breaks+raw_tex",
         "-s",
-        "--pdf-engine=tectonic",
+        f"--pdf-engine={tectonic}",
         "-V", "mainfont=Helvetica",
         "-V", "monofont=Menlo",
         "-V", "geometry:margin=20mm",
@@ -1092,7 +1085,7 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
         "--resource-path", f"{str(tmp_base)}:{str(concept_dir)}",
         "-o", str(out_pdf),
     ]
-    res = subprocess.run(cmd, cwd=str(tmp_base), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    res = subprocess.run(cmd, cwd=str(tmp_base), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=subprocess_env())
     lines.append("$ " + " ".join(cmd))
     lines.append(f"(exit {res.returncode})")
     lines.append(res.stdout or "")
@@ -1104,7 +1097,7 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
                 str(tmp_md),
                 "-f", "markdown+hard_line_breaks",
                 "-s",
-                "--pdf-engine=tectonic",
+                f"--pdf-engine={tectonic}",
                 "-V", "mainfont=Helvetica",
                 "-V", "monofont=Menlo",
                 "-V", "geometry:margin=20mm",
@@ -1112,7 +1105,7 @@ def _convert_markdown_to_pdf(md_file: Path, out_pdf: Path) -> Tuple[bool, Option
                 "--resource-path", f"{str(tmp_base)}:{str(concept_dir)}",
                 "-o", str(out_pdf),
             ]
-            res2 = subprocess.run(cmd_fallback, cwd=str(tmp_base), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            res2 = subprocess.run(cmd_fallback, cwd=str(tmp_base), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=subprocess_env())
             lines.append("$ " + " ".join(cmd_fallback))
             lines.append(f"(exit {res2.returncode})")
             lines.append(res2.stdout or "")
