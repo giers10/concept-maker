@@ -1,7 +1,5 @@
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
 use tauri::{
@@ -12,114 +10,6 @@ use tauri::{
 fn repo_root() -> PathBuf {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manifest_dir.parent().unwrap_or(&manifest_dir).to_path_buf()
-}
-
-fn sessions_file() -> PathBuf {
-    repo_root().join(".idea-hole").join("sessions.jsonl")
-}
-
-#[derive(Deserialize)]
-struct SessionFields {
-    title: Option<Value>,
-    description: Option<Value>,
-    saved_at: Option<Value>,
-}
-
-#[derive(Serialize)]
-struct SessionSummary {
-    title: String,
-    description: String,
-    saved_at: i64,
-}
-
-fn open_sessions_file() -> Result<Option<File>, String> {
-    match File::open(sessions_file()) {
-        Ok(file) => Ok(Some(file)),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(err) => Err(format!("Failed to open sessions file: {err}")),
-    }
-}
-
-fn session_summary_from_line(line: &str) -> Option<SessionSummary> {
-    let fields: SessionFields = serde_json::from_str(line).ok()?;
-    let title = json_value_to_string(fields.title).trim().to_string();
-    if title.is_empty() {
-        return None;
-    }
-
-    Some(SessionSummary {
-        title,
-        description: json_value_to_string(fields.description),
-        saved_at: json_value_to_i64(fields.saved_at),
-    })
-}
-
-fn json_value_to_string(value: Option<Value>) -> String {
-    match value {
-        Some(Value::String(text)) => text,
-        Some(Value::Number(number)) => number.to_string(),
-        Some(Value::Bool(value)) => value.to_string(),
-        _ => String::new(),
-    }
-}
-
-fn json_value_to_i64(value: Option<Value>) -> i64 {
-    match value {
-        Some(Value::Number(number)) => number
-            .as_i64()
-            .or_else(|| number.as_u64().and_then(|value| i64::try_from(value).ok()))
-            .or_else(|| number.as_f64().map(|value| value as i64))
-            .unwrap_or_default(),
-        Some(Value::String(text)) => text.parse::<i64>().unwrap_or_default(),
-        _ => 0,
-    }
-}
-
-fn list_sessions_fast() -> Result<Vec<SessionSummary>, String> {
-    let Some(file) = open_sessions_file()? else {
-        return Ok(Vec::new());
-    };
-
-    let mut sessions = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line.map_err(|err| format!("Failed to read sessions file: {err}"))?;
-        if line.trim().is_empty() {
-            continue;
-        }
-        if let Some(summary) = session_summary_from_line(&line) {
-            sessions.push(summary);
-        }
-    }
-
-    Ok(sessions)
-}
-
-fn load_session_fast(title: &str) -> Result<Value, String> {
-    let target = title.trim();
-    if target.is_empty() {
-        return Ok(Value::Null);
-    }
-
-    let Some(file) = open_sessions_file()? else {
-        return Ok(Value::Null);
-    };
-
-    for line in BufReader::new(file).lines() {
-        let line = line.map_err(|err| format!("Failed to read sessions file: {err}"))?;
-        if line.trim().is_empty() {
-            continue;
-        }
-
-        let Some(summary) = session_summary_from_line(&line) else {
-            continue;
-        };
-        if summary.title == target {
-            return serde_json::from_str(&line)
-                .map_err(|err| format!("Failed to parse saved session: {err}"));
-        }
-    }
-
-    Ok(Value::Null)
 }
 
 enum Backend {
