@@ -6,8 +6,6 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { markdownToHTML } from "./markdown/markdown";
 import "./markdown/markdown-render.css";
 
-const IMAGE_PROMPT_PLACEHOLDER = "Generated image prompt will appear here.";
-
 type FileEntry = {
   kind: "file";
   path: string;
@@ -82,7 +80,6 @@ export default function App() {
   const [markdownPreview, setMarkdownPreview] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [imagePrompt, setImagePrompt] = useState(IMAGE_PROMPT_PLACEHOLDER);
   const [ollamaHost, setOllamaHost] = useState("http://localhost:11434");
   const [ollamaModel, setOllamaModel] = useState("Select model...");
   const [searxUrl, setSearxUrl] = useState("http://localhost:8888");
@@ -368,37 +365,6 @@ export default function App() {
     }
   };
 
-  const onGenerateImagePrompt = async () => {
-    if (!ollamaModel || ollamaModel === "Select model...") {
-      window.alert("Please select a model first.");
-      return;
-    }
-    const ideaText = [title ? `Title: ${title}` : "", description ? `Description: ${description}` : "", concept || notes]
-      .filter(Boolean)
-      .join("\n\n");
-    if (!ideaText.trim()) {
-      window.alert("Add concept text or notes first.");
-      return;
-    }
-    setBusy((prev) => ({ ...prev, imagePrompt: true }));
-    setStatus("Generating image prompt...");
-    try {
-      const promptText = await runBackend<string>("generate_image_prompt", {
-        idea_text: ideaText,
-        ollama_host: ollamaHost,
-        model: ollamaModel,
-      });
-      setImagePrompt(promptText);
-      setStatus("Image prompt ready");
-    } catch (err) {
-      setStatus("Image prompt failed");
-      console.error(err);
-      window.alert("Image prompt failed. Check console for details.");
-    } finally {
-      setBusy((prev) => ({ ...prev, imagePrompt: false }));
-    }
-  };
-
   const onPriorArt = async () => {
     if (!ollamaModel || ollamaModel === "Select model...") {
       window.alert("Please select a model first.");
@@ -476,7 +442,6 @@ export default function App() {
     setConcept("");
     setTitle("");
     setDescription("");
-    setImagePrompt(IMAGE_PROMPT_PLACEHOLDER);
   };
 
   const onSaveSession = async () => {
@@ -501,7 +466,6 @@ export default function App() {
           websites: websites.map((w) => ({ url: w.url })),
           rephrase_variants: rephraseVariants,
           rephrase_selected_key: rephraseSelected,
-          image_prompt: imagePrompt === IMAGE_PROMPT_PLACEHOLDER ? "" : imagePrompt,
         },
         allow_overwrite: true,
       });
@@ -556,7 +520,6 @@ export default function App() {
       );
       setRephraseVariants(data.rephrase_variants || []);
       setRephraseSelected(data.rephrase_selected_key || null);
-      setImagePrompt(data.image_prompt || IMAGE_PROMPT_PLACEHOLDER);
       setSessionModalOpen(false);
       setStatus("Session loaded");
     } catch (err) {
@@ -737,14 +700,7 @@ export default function App() {
               <button onClick={() => setMarkdownPreview((value) => !value)}>
                 {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
               </button>
-              <button onClick={onGenerateImagePrompt} disabled={busy.imagePrompt}>Generate image prompt</button>
             </div>
-            <textarea
-              className="image-prompt"
-              value={imagePrompt}
-              onChange={(e) => setImagePrompt(e.target.value)}
-              placeholder={IMAGE_PROMPT_PLACEHOLDER}
-            />
           </section>
         </div>
       </div>
