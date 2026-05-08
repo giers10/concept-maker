@@ -236,9 +236,13 @@ fn run_backend(app: &AppHandle, backend: &Backend, input: &str) -> Result<Vec<u8
     if let Err(err) = std::fs::create_dir_all(&data_dir) {
         return Err(format!("Failed to create backend data directory: {err}"));
     }
+    let cwd = match backend {
+        Backend::Source { .. } => repo_root(),
+        Backend::Sidecar(_) => data_dir.clone(),
+    };
 
     let mut child = match command_for_backend(backend)
-        .current_dir(repo_root())
+        .current_dir(cwd)
         .env("CONCEPT_MAKER_DATA_DIR", &data_dir)
         .env(
             "PATH",
