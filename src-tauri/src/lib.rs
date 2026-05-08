@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::path::{Path, PathBuf};
+use std::process::{Command as ProcessCommand, Stdio};
 use tauri::{
     menu::{Menu, MenuItem, Submenu},
-    Emitter,
+    AppHandle, Emitter, Manager,
 };
 
 fn repo_root() -> PathBuf {
