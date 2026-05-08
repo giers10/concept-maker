@@ -744,10 +744,10 @@ export default function App() {
               </>
             )}
             <div className="controls concept-actions">
-              <button onClick={onExportPdf} disabled={busy.preview}>Export PDF</button>
               <button onClick={() => setMarkdownPreview((value) => !value)}>
                 {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
               </button>
+              <button onClick={onExportPdf} disabled={busy.preview}>Export PDF</button>
             </div>
           </section>
         </div>
