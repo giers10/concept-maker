@@ -274,29 +274,14 @@ fn run_backend(app: &AppHandle, backend: &Backend, input: &str) -> Result<Vec<u8
 }
 
 #[tauri::command]
-fn run_python_action(action: String, payload: Value) -> Result<Value, String> {
-    match action.as_str() {
-        "list_sessions" => {
-            return serde_json::to_value(list_sessions_fast()?).map_err(|err| err.to_string());
-        }
-        "load_session" => {
-            let title = payload.get("title").and_then(Value::as_str).unwrap_or("");
-            return load_session_fast(title);
-        }
-        _ => {}
-    }
-
-    let script = repo_root().join("concept_api.py");
-    if !script.exists() {
-        return Err("concept_api.py not found".to_string());
-    }
-
+fn run_python_action(app: AppHandle, action: String, payload: Value) -> Result<Value, String> {
     let req = serde_json::json!({
       "action": action,
       "payload": payload,
     });
     let input = serde_json::to_string(&req).map_err(|e| e.to_string())?;
-    let stdout = run_python(script.to_string_lossy().as_ref(), &input)?;
+    let backend = backend(&app)?;
+    let stdout = run_backend(&app, &backend, &input)?;
     let resp: Value = serde_json::from_slice(&stdout).map_err(|e| e.to_string())?;
     if resp.get("ok") == Some(&Value::Bool(true)) {
         Ok(resp.get("data").cloned().unwrap_or(Value::Null))
@@ -317,15 +302,15 @@ fn open_path(path: String) -> Result<(), String> {
     }
 
     let mut command = if cfg!(target_os = "macos") {
-        let mut command = Command::new("open");
+        let mut command = ProcessCommand::new("open");
         command.arg(&path);
         command
     } else if cfg!(target_os = "windows") {
-        let mut command = Command::new("cmd");
+        let mut command = ProcessCommand::new("cmd");
         command.arg("/C").arg("start").arg("").arg(&path);
         command
     } else {
-        let mut command = Command::new("xdg-open");
+        let mut command = ProcessCommand::new("xdg-open");
         command.arg(&path);
         command
     };
