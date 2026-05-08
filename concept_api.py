@@ -1279,6 +1279,16 @@ def generate_concept(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def prior_art(payload: Dict[str, Any]) -> Dict[str, Any]:
     notes = (payload.get("notes") or "").strip()
+    if not notes:
+        notes = "\n\n".join(
+            part
+            for part in (
+                f"Title: {(payload.get('title') or '').strip()}" if (payload.get("title") or "").strip() else "",
+                f"Description: {(payload.get('description') or '').strip()}" if (payload.get("description") or "").strip() else "",
+                (payload.get("concept") or "").strip(),
+            )
+            if part
+        )
     files = payload.get("files") or []
     websites = payload.get("websites") or []
     host = payload.get("ollama_host") or "http://localhost:11434"
