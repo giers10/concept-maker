@@ -233,19 +233,25 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .menu(|handle| {
+            let quit_item =
+                MenuItem::with_id(handle, "app-quit", "Quit", true, Some("CmdOrCtrl+Q"))?;
+            let app_menu = Submenu::with_items(handle, "Concept Maker", true, &[&quit_item])?;
+
             let new_item = MenuItem::with_id(handle, "file-new", "New", true, None::<&str>)?;
             let open_item = MenuItem::with_id(handle, "file-open", "Open", true, None::<&str>)?;
             let save_item = MenuItem::with_id(handle, "file-save", "Save", true, None::<&str>)?;
             let file_menu =
                 Submenu::with_items(handle, "File", true, &[&new_item, &open_item, &save_item])?;
 
-            let open_settings =
-                MenuItem::with_id(handle, "settings-open", "Open Settings", true, None::<&str>)?;
-            let settings_menu = Submenu::with_items(handle, "Settings", true, &[&open_settings])?;
+            let settings_item =
+                MenuItem::with_id(handle, "settings-open", "Settings", true, None::<&str>)?;
 
-            Menu::with_items(handle, &[&file_menu, &settings_menu])
+            Menu::with_items(handle, &[&app_menu, &file_menu, &settings_item])
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
+            "app-quit" => {
+                app.exit(0);
+            }
             "file-new" | "file-open" | "file-save" | "settings-open" => {
                 let _ = app.emit("app-menu-action", event.id().as_ref());
             }

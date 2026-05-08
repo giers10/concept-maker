@@ -664,7 +664,7 @@ export default function App() {
               <div className="table-body">
                 {rows.length === 0 && (
                   <div className="table-row" style={{ gridTemplateColumns: "1fr" }}>
-                    <div style={{ color: "var(--muted)" }}>Drop files here or use the buttons below.</div>
+                    <div style={{ color: "var(--muted)" }}>Drop files here or use Add Files / Add URL.</div>
                   </div>
                 )}
                 {rows.map((row) => (
