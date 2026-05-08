@@ -245,8 +245,10 @@ pub fn run() {
 
             let settings_item =
                 MenuItem::with_id(handle, "settings-open", "Settings", true, None::<&str>)?;
+            let settings_menu =
+                Submenu::with_items(handle, "Settings", true, &[&settings_item])?;
 
-            Menu::with_items(handle, &[&app_menu, &file_menu, &settings_item])
+            Menu::with_items(handle, &[&app_menu, &file_menu, &settings_menu])
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
             "app-quit" => {
