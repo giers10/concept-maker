@@ -83,6 +83,16 @@ function ensurePdfExtension(path: string): string {
   return /\.pdf$/i.test(path) ? path : `${path}.pdf`;
 }
 
+function fallbackIdeaText(title: string, description: string, concept: string): string {
+  return [
+    title.trim() ? `Title: ${title.trim()}` : "",
+    description.trim() ? `Description: ${description.trim()}` : "",
+    concept.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export default function App() {
   const [status, setStatusMessage] = useState("");
   const [statusVersion, setStatusVersion] = useState(0);
@@ -386,11 +396,15 @@ export default function App() {
       window.alert("Please select a model first.");
       return;
     }
+    const priorArtNotes = notes.trim() ? notes : fallbackIdeaText(title, description, concept);
     setBusy((prev) => ({ ...prev, prior: true }));
     setStatus("Searching prior art...");
     try {
       const data = await runBackend<PriorArtResponse>("prior_art", {
-        notes,
+        notes: priorArtNotes,
+        concept,
+        title,
+        description,
         files: files.map((f) => f.path),
         websites: websites.map((w) => w.url),
         ollama_host: ollamaHost,
