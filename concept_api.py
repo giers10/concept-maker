@@ -31,8 +31,26 @@ import websearch
 # Paths
 # -----------------------------
 
-REPO_ROOT = Path(__file__).resolve().parent
-IDEA_HOLE_DIR = REPO_ROOT / ".idea-hole"
+REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+IDEA_HOLE_DIR = Path(os.environ.get("CONCEPT_MAKER_DATA_DIR", REPO_ROOT / ".idea-hole")).expanduser()
+SYSTEM_BIN_DIRS = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin", "/bin"]
+
+
+def resolve_command(name: str) -> Optional[str]:
+    for base in [None, *SYSTEM_BIN_DIRS]:
+        p = shutil.which(name) if base is None else os.path.join(base, name)
+        if p and os.path.exists(p):
+            return p
+    return None
+
+
+def subprocess_env() -> Dict[str, str]:
+    env = os.environ.copy()
+    current = env.get("PATH", "")
+    extra = [path for path in SYSTEM_BIN_DIRS if path and path not in current.split(os.pathsep)]
+    if extra:
+        env["PATH"] = os.pathsep.join([*extra, current] if current else extra)
+    return env
 
 
 # -----------------------------
