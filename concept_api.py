@@ -1163,7 +1163,10 @@ def save_settings(settings: Dict[str, str]) -> None:
 
 def list_models() -> List[str]:
     try:
-        res = subprocess.run(["ollama", "list"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=8)
+        ollama = resolve_command("ollama")
+        if not ollama:
+            return []
+        res = subprocess.run([ollama, "list"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=8, env=subprocess_env())
         if res.returncode != 0:
             return []
         lines = [ln.strip() for ln in (res.stdout or "").splitlines()]
