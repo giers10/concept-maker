@@ -366,11 +366,6 @@ select {
   color: var(--subtle);
 }
 
-.image-prompt {
-  min-height: 110px;
-  background: var(--surface);
-}
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
