@@ -122,48 +122,155 @@ fn load_session_fast(title: &str) -> Result<Value, String> {
     Ok(Value::Null)
 }
 
-fn run_python(script: &str, input: &str) -> Result<Vec<u8>, String> {
-    let cwd = repo_root();
-    let mut last_err: Option<String> = None;
-    for candidate in ["python3", "python"] {
-        let mut child = match Command::new(candidate)
-            .arg(script)
-            .current_dir(&cwd)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-        {
-            Ok(child) => child,
-            Err(err) => {
-                last_err = Some(format!("{candidate}: {err}"));
-                continue;
-            }
-        };
+enum Backend {
+    Sidecar(PathBuf),
+    Source { python: String, script: PathBuf },
+}
 
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Err(err) = stdin.write_all(input.as_bytes()) {
-                return Err(format!("Failed to write to Python stdin: {err}"));
+fn sidecar_names() -> Vec<&'static str> {
+    if cfg!(target_os = "windows") {
+        vec![
+            "concept-api.exe",
+            "concept-api-x86_64-pc-windows-msvc.exe",
+            "concept-api-aarch64-pc-windows-msvc.exe",
+        ]
+    } else if cfg!(target_os = "macos") {
+        vec![
+            "concept-api",
+            "concept-api-aarch64-apple-darwin",
+            "concept-api-x86_64-apple-darwin",
+        ]
+    } else {
+        vec![
+            "concept-api",
+            "concept-api-x86_64-unknown-linux-gnu",
+            "concept-api-aarch64-unknown-linux-gnu",
+        ]
+    }
+}
+
+fn push_sidecar_candidates(candidates: &mut Vec<PathBuf>, dir: &Path) {
+    for name in sidecar_names() {
+        candidates.push(dir.join(name));
+    }
+}
+
+fn sidecar_candidates(app: &AppHandle) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    let root = repo_root();
+    push_sidecar_candidates(&mut candidates, &root.join("src-tauri").join("binaries"));
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            push_sidecar_candidates(&mut candidates, exe_dir);
+            if let Some(contents_dir) = exe_dir.parent() {
+                push_sidecar_candidates(&mut candidates, &contents_dir.join("Resources"));
             }
         }
-
-        let output = match child.wait_with_output() {
-            Ok(output) => output,
-            Err(err) => {
-                last_err = Some(format!("{candidate}: {err}"));
-                continue;
-            }
-        };
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("Python backend failed: {stderr}"));
-        }
-
-        return Ok(output.stdout);
     }
 
-    Err(last_err.unwrap_or_else(|| "Python not found".to_string()))
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        push_sidecar_candidates(&mut candidates, &resource_dir);
+        push_sidecar_candidates(&mut candidates, &resource_dir.join("binaries"));
+    }
+
+    candidates
+}
+
+fn bundled_sidecar(app: &AppHandle) -> Option<PathBuf> {
+    sidecar_candidates(app)
+        .into_iter()
+        .find(|candidate| candidate.is_file())
+}
+
+fn source_backend_script() -> PathBuf {
+    repo_root().join("concept_api.py")
+}
+
+fn backend(app: &AppHandle) -> Result<Backend, String> {
+    let script = source_backend_script();
+    if cfg!(debug_assertions) && script.exists() {
+        return Ok(Backend::Source {
+            python: "python3".to_string(),
+            script,
+        });
+    }
+
+    if let Some(sidecar) = bundled_sidecar(app) {
+        return Ok(Backend::Sidecar(sidecar));
+    }
+
+    if script.exists() {
+        return Ok(Backend::Source {
+            python: "python3".to_string(),
+            script,
+        });
+    }
+
+    Err("Python backend not found. Rebuild the app to package the backend sidecar.".to_string())
+}
+
+fn backend_data_dir(app: &AppHandle, backend: &Backend) -> PathBuf {
+    match backend {
+        Backend::Source { .. } => repo_root().join(".idea-hole"),
+        Backend::Sidecar(_) => app
+            .path()
+            .app_data_dir()
+            .unwrap_or_else(|_| repo_root().join(".idea-hole")),
+    }
+}
+
+fn command_for_backend(backend: &Backend) -> ProcessCommand {
+    match backend {
+        Backend::Sidecar(path) => ProcessCommand::new(path),
+        Backend::Source { python, script } => {
+            let mut command = ProcessCommand::new(python);
+            command.arg(script);
+            command
+        }
+    }
+}
+
+fn run_backend(app: &AppHandle, backend: &Backend, input: &str) -> Result<Vec<u8>, String> {
+    let data_dir = backend_data_dir(app, backend);
+    if let Err(err) = std::fs::create_dir_all(&data_dir) {
+        return Err(format!("Failed to create backend data directory: {err}"));
+    }
+
+    let mut child = match command_for_backend(backend)
+        .current_dir(repo_root())
+        .env("CONCEPT_MAKER_DATA_DIR", &data_dir)
+        .env(
+            "PATH",
+            "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        )
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(err) => {
+            return Err(format!("Failed to start Python backend: {err}"));
+        }
+    };
+
+    if let Some(mut stdin) = child.stdin.take() {
+        if let Err(err) = stdin.write_all(input.as_bytes()) {
+            return Err(format!("Failed to write to Python stdin: {err}"));
+        }
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|err| format!("Python backend failed to finish: {err}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python backend failed: {stderr}"));
+    }
+
+    Ok(output.stdout)
 }
 
 #[tauri::command]
