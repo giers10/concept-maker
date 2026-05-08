@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { markdownToHTML } from "./markdown/markdown";
@@ -65,6 +65,22 @@ function formatTime(ts: number): string {
 
 function rowId(row: RowEntry): string {
   return row.kind === "file" ? `file:${row.path}` : `url:${row.url}`;
+}
+
+function pdfFileNameFromTitle(title: string, conceptText: string): string {
+  const heading = conceptText.match(/^#\s+(.+)$/m)?.[1] ?? "";
+  const rawName = (title || heading || "concept").trim();
+  const safeName = rawName
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_.]+|[-_.]+$/g, "");
+
+  return `${safeName || "concept"}.pdf`;
+}
+
+function ensurePdfExtension(path: string): string {
+  return /\.pdf$/i.test(path) ? path : `${path}.pdf`;
 }
 
 export default function App() {
@@ -393,37 +409,50 @@ export default function App() {
     }
   };
 
-  const onPreview = async () => {
+  const onExportPdf = async () => {
     if (!concept.trim()) {
       window.alert("Generate or paste concept text first.");
       return;
     }
     setBusy((prev) => ({ ...prev, preview: true }));
-    setStatus("Preparing preview...");
+    setStatus("Choose where to save the PDF...");
     try {
+      const selectedPath = await save({
+        title: "Export PDF",
+        defaultPath: pdfFileNameFromTitle(title, concept),
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+        canCreateDirectories: true,
+      });
+      if (!selectedPath) {
+        setStatus("PDF export cancelled");
+        return;
+      }
+
+      setStatus("Exporting PDF...");
       const result = await runBackend<{ ok: boolean; pdf_path: string; log_path: string }>("preview_pdf", {
         concept,
         title,
         files: files.map((f) => f.path),
+        output_path: ensurePdfExtension(selectedPath),
       });
       if (result.ok) {
-        setStatus("Opening preview PDF...");
+        setStatus("Opening exported PDF...");
         try {
           await openPath(result.pdf_path);
-          setStatus("Preview PDF opened");
+          setStatus("PDF exported and opened");
         } catch (openErr) {
-          setStatus("Preview PDF ready");
+          setStatus("PDF exported");
           console.error(openErr);
-          window.alert(`Preview PDF saved to:\n${result.pdf_path}\n\nCould not open it automatically.`);
+          window.alert(`PDF exported to:\n${result.pdf_path}\n\nCould not open it automatically.`);
         }
       } else {
-        setStatus("Preview failed");
-        window.alert(`Preview failed. Log: ${result.log_path}`);
+        setStatus("Export failed");
+        window.alert(`Export failed. Log: ${result.log_path}`);
       }
     } catch (err) {
-      setStatus("Preview failed");
+      setStatus("Export failed");
       console.error(err);
-      window.alert("Preview failed. Check console for details.");
+      window.alert("Export failed. Check console for details.");
     } finally {
       setBusy((prev) => ({ ...prev, preview: false }));
     }
@@ -695,8 +724,8 @@ export default function App() {
                 />
               </>
             )}
-            <div className="controls">
-              <button onClick={onPreview} disabled={busy.preview}>Preview PDF</button>
+            <div className="controls concept-actions">
+              <button onClick={onExportPdf} disabled={busy.preview}>Export PDF</button>
               <button onClick={() => setMarkdownPreview((value) => !value)}>
                 {markdownPreview ? "Edit Markdown" : "Preview Markdown"}
               </button>
